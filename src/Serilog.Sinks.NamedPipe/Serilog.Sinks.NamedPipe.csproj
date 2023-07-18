@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Authors>Michael Monsour</Authors>
+    <Copyright>Copyright © Michael Monsour 2023</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description></Description>
+    <PackageTags></PackageTags>
+    <PackageProjectUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IsPackable>true</IsPackable>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="3.0.1" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
+  </ItemGroup>
+
+</Project>
