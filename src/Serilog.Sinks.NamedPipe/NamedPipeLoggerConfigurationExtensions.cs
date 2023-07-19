@@ -102,7 +102,9 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        ArgumentNullException.ThrowIfNull(sinkConfiguration);
+        if (sinkConfiguration == null) {
+            throw new ArgumentNullException(nameof(sinkConfiguration));
+        }
         return sinkConfiguration.Sink(new NamedPipeSink(pipeStreamFactory, encoding, formatter, bufferSize), restrictedToMinimumLevel, levelSwitch);
     }
 

@@ -68,9 +68,9 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     {
         try {
             while (!_sinkCancellation.Token.IsCancellationRequested) {
-                await using var pipe = await _pipeFactory(_sinkCancellation.Token).ConfigureAwait(false);
+                using var pipe = await _pipeFactory(_sinkCancellation.Token).ConfigureAwait(false);
                 try {
-                    await using var output = new StreamWriter(pipe, _encoding) { AutoFlush = true };
+                    using var output = new StreamWriter(pipe, _encoding) { AutoFlush = true };
                     while (await _channel.Reader.WaitToReadAsync(_sinkCancellation.Token).ConfigureAwait(false)) {
                         if (_channel.Reader.TryPeek(out var logEvent)) {
                             _formatter.Format(logEvent, output);
