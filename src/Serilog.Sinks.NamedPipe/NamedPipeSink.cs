@@ -15,22 +15,27 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 {
     internal NamedPipeSink(PipeStreamFactory pipeFactory, Encoding? encoding, ITextFormatter? formatter, int capacity)
     {
-        _pipeFactory = pipeFactory;
-        _encoding = encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        _formatter = formatter ?? new CompactJsonFormatter();
+        PipeFactory = pipeFactory;
+        Encoding = encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        Formatter = formatter ?? new CompactJsonFormatter();
 
-        _channel = (capacity > 0)
-            ? Channel.CreateBounded<LogEvent>(new BoundedChannelOptions(capacity) {
+        Channel = (capacity > 0)
+            ? System.Threading.Channels.Channel.CreateBounded<LogEvent>(new BoundedChannelOptions(capacity) {
                 FullMode = BoundedChannelFullMode.DropWrite,
                 SingleWriter = true,
                 SingleReader = true
             })
-            : Channel.CreateUnbounded<LogEvent>(new UnboundedChannelOptions {
+            : System.Threading.Channels.Channel.CreateUnbounded<LogEvent>(new UnboundedChannelOptions {
                 SingleWriter = true,
                 SingleReader = true
             });
 
-        Task.Factory.StartNew(StartAsyncLogEventPump, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+        Worker = Task.Factory.StartNew(
+            StartAsyncLogEventPump,
+            SinkCancellation.Token,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default
+        ).Unwrap();
     }
 
 
@@ -61,20 +66,20 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
 
     public void Emit(LogEvent logEvent)
-        => _channel.Writer.TryWrite(logEvent);
+        => Channel.Writer.TryWrite(logEvent);
 
 
     private async Task StartAsyncLogEventPump()
     {
         try {
-            while (!_sinkCancellation.Token.IsCancellationRequested) {
-                using var pipe = await _pipeFactory(_sinkCancellation.Token).ConfigureAwait(false);
+            while (!SinkCancellation.Token.IsCancellationRequested) {
+                using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                 try {
-                    using var output = new StreamWriter(pipe, _encoding) { AutoFlush = true };
-                    while (await _channel.Reader.WaitToReadAsync(_sinkCancellation.Token).ConfigureAwait(false)) {
-                        if (_channel.Reader.TryPeek(out var logEvent)) {
-                            _formatter.Format(logEvent, output);
-                            _channel.Reader.TryRead(out _);
+                    using var output = new StreamWriter(pipe, Encoding) { AutoFlush = true };
+                    while (await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
+                        if (Channel.Reader.TryPeek(out var logEvent)) {
+                            Formatter.Format(logEvent, output);
+                            Channel.Reader.TryRead(out _);
                         }
                     }
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
@@ -92,18 +97,19 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     public void Dispose()
     {
         try {
-            _sinkCancellation.Cancel();
-            _sinkCancellation.Dispose();
-            _channel.Writer.Complete();
+            SinkCancellation.Cancel();
+            SinkCancellation.Dispose();
+            Channel.Writer.Complete();
         } catch {
             //Ignored
         }
     }
 
 
-    private readonly CancellationTokenSource _sinkCancellation = new();
-    private readonly ITextFormatter _formatter;
-    private readonly Channel<LogEvent> _channel;
-    private readonly PipeStreamFactory _pipeFactory;
-    private readonly Encoding _encoding;
+    protected internal readonly CancellationTokenSource SinkCancellation = new();
+    protected internal readonly ITextFormatter Formatter;
+    protected internal readonly Channel<LogEvent> Channel;
+    protected internal readonly PipeStreamFactory PipeFactory;
+    protected internal readonly Encoding Encoding;
+    protected internal readonly Task Worker;
 }
