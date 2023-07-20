@@ -85,7 +85,7 @@ public class NamedPipeSinkTests
 
 
     [Fact]
-    public async Task Dispose_ShouldCancelPumpAndCompleteReader()
+    public void Dispose_ShouldCancelPumpAndCompleteReader()
     {
         ChannelReader<LogEvent> reader;
         Task worker;
