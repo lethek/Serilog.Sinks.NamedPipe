@@ -1,1 +1,1 @@
-# Serilog.Sinks.NamedPipeStream
+# Serilog.Sinks.NamedPipe
