@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Hypothesist" Version="2.1.55" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="7.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
     <PackageReference Include="Serilog.Formatting.Compact.Reader" Version="2.0.0" />
     <PackageReference Include="xunit" Version="2.5.0" />

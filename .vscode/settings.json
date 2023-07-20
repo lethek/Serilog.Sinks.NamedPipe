@@ -1,0 +1,3 @@
+{
+	"dotnet.defaultSolution": "Serilog.Sinks.NamedPipe.sln"
+}

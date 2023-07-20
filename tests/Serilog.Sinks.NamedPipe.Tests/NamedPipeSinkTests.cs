@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using System.Text;
+using System.Threading.Channels;
 
 using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
@@ -11,97 +12,101 @@ namespace Serilog.Sinks.NamedPipe.Tests;
 public class NamedPipeSinkTests
 {
     [Fact]
-    public async Task Emit_WithNamedPipeServer_ShouldWriteToNamedPipeCorrectly()
+    public async Task NamedPipeServer_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
         string pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, Encoding.UTF8, null, 100);
 
-        await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
+        await using var client = new NamedPipeClientStream(".", pipeName);
         await client.ConnectAsync();
         using var reader = new StreamReader(client, Encoding.UTF8);
         Assert.True(client.IsConnected);
 
         sink.Emit(CreateEvent("Hello unit test"));
 
-        var logJson = await reader.ReadLineAsync();
-        var logEvent = DeserializeCompactLogEvents(logJson).First();
-        Assert.Equal("Hello unit test", logEvent.MessageTemplate.Text);
+        Assert.Equal("Hello unit test", await RenderNextLogEventAsync(reader));
     }
 
 
     [Fact]
-    public async Task Emit_WithNamedPipeClient_ShouldWriteToNamedPipeCorrectly()
+    public async Task NamedPipeClient_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
         string pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, Encoding.UTF8, null, 100);
 
-        await using var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        await using var server = new NamedPipeServerStream(pipeName);
         await server.WaitForConnectionAsync();
         using var reader = new StreamReader(server, Encoding.UTF8);
         Assert.True(server.IsConnected);
 
         sink.Emit(CreateEvent("Hello unit test"));
 
-        var logJson = await reader.ReadLineAsync();
-        var logEvent = DeserializeCompactLogEvents(logJson).First();
-        Assert.Equal("Hello unit test", logEvent.MessageTemplate.Text);
+        Assert.Equal("Hello unit test", await RenderNextLogEventAsync(reader));
     }
 
 
     [Fact]
-    public async Task WhenNamedPipeIsBroken_WithNamedPipeServer_ShouldReconnect()
+    public async Task NamedPipeServer_WhenNamedPipeIsBroken_ShouldReconnect()
     {
         string pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, Encoding.UTF8, null, 100);
 
-        await using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+        //Create our first client connection to the pipe, then break the pipe by allowing the connection to be disposed
+        await using (var client = new NamedPipeClientStream(pipeName)) {
             await client.ConnectAsync();
             using var reader = new StreamReader(client, Encoding.UTF8);
-            Assert.True(client.IsConnected);
 
-            sink.Emit(CreateEvent("Hello unit test"));
+            sink.Emit(CreateEvent("Message while connected 1"));
 
-            var logJson = await reader.ReadLineAsync();
-            var logEvent = DeserializeCompactLogEvents(logJson).First();
-            Assert.Equal("Hello unit test", logEvent.MessageTemplate.Text);
+            Assert.Equal("Message while connected 1", await RenderNextLogEventAsync(reader));
         }
 
-        //TODO: something is wrong with this unit test!
-        //await using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
-            //await client.ConnectAsync();
-            //using var reader2 = new StreamReader(client, Encoding.UTF8);
-            //Assert.True(client.IsConnected);
 
-            //sink.Emit(CreateEvent("Hello unit test 2"));
+        //Logging while the pipe is broken allows the sink to detect and start reconnecting
+        sink.Emit(CreateEvent("Detect broken pipe"));
 
-            //var logJson2 = await reader2.ReadLineAsync();
-            //var logEvent2 = DeserializeCompactLogEvents(logJson2).First();
-            //Assert.Equal("Hello unit test 2", logEvent2.MessageTemplate.Text);
-        //}
+
+        //Create our second client connection to the pipe
+        await using (var client = new NamedPipeClientStream(".", pipeName)) {
+            await client.ConnectAsync();
+            using var reader = new StreamReader(client, Encoding.UTF8);
+
+            //Logs such as the following which were queued while the pipe was not connected, will be delivered here upon reconnection
+            Assert.Equal("Detect broken pipe", await RenderNextLogEventAsync(reader));
+
+            sink.Emit(CreateEvent("Message while connected 2"));
+
+            Assert.Equal("Message while connected 2", await RenderNextLogEventAsync(reader));
+        }
     }
 
 
     [Fact]
     public async Task Dispose_ShouldCancelPumpAndCompleteReader()
     {
-        //Arrange
+        ChannelReader<LogEvent> reader;
+        Task worker;
+
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(GeneratePipeName());
-        var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
-        //Act
-        sink.Dispose();
+        using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
+            reader = sink.Channel.Reader;
+            worker = sink.Worker;
+        }
 
-        await Task.Yield();
-
-        //Assert
-        Assert.True(sink.Channel.Reader.Completion.IsCompleted);
-        Assert.True(sink.Worker.IsCompleted);
+        //The reader should be completed when the sink is disposed
+        Assert.True(Task.WaitAll(new[] { reader.Completion, worker }, timeout: TimeSpan.FromSeconds(1)));
     }
 
-    private static IEnumerable<LogEvent> DeserializeCompactLogEvents(string? json)
+
+    private static async Task<string> RenderNextLogEventAsync(TextReader reader)
+        => DeserializeClef(await reader.ReadLineAsync()).First().RenderMessage();
+
+
+    private static IEnumerable<LogEvent> DeserializeClef(string? json)
     {
         using var txtReader = new StringReader(json ?? "");
         var logReader = new LogEventReader(txtReader);
