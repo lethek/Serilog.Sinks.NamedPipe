@@ -7,6 +7,7 @@ using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
 using Serilog.Sinks.NamedPipe.Internals;
+
 using Xunit.Abstractions;
 
 
@@ -215,8 +216,11 @@ public class NamedPipeSinkTests
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
-            sink.OnMessagePumpStopped += _ => { Output.WriteLine("OnMessagePumpStopped"); stoppedSemaphore.Release(); };
-            sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: "+ex);
+            sink.OnMessagePumpStopped += _ => {
+                Output.WriteLine("OnMessagePumpStopped");
+                stoppedSemaphore.Release();
+            };
+            sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: " + ex);
             sink.OnPipeConnected += (_, _) => Output.WriteLine("OnPipeConnected");
             sink.OnPipeBroken += (_, _) => Output.WriteLine("OnPipeBroken");
             sink.OnPipeDisconnected += (_, _) => Output.WriteLine("OnPipeDisconnected");
@@ -227,14 +231,15 @@ public class NamedPipeSinkTests
             //NOTE: Shouldn't need to open this client connection here, but it's the only way to reliably run this
             //unit-test and avoid a bug in old .NET versions (https://github.com/dotnet/runtime/issues/40289) causing
             //the server to hang forever on Unix systems.
-            await using var client = await NamedPipeSink.NamedPipeClientConnectionFactory(pipeName)(default);
+            await using var client = new NamedPipeClientStream(pipeName);
+            await client.ConnectAsync();
         }
 
         //Wait until the message pump has stopped
         await stoppedSemaphore.WaitAsync(DefaultTimeout);
 
         //The reader and worker tasks should now be completed
-        Output.WriteLine("Message pump status: "+worker.Status.ToString());
+        Output.WriteLine("Message pump status: " + worker.Status.ToString());
         Assert.True(reader.Completion.IsCompleted, "Reader should be completed");
         Assert.True(worker.IsCompleted, "Worker task should be completed");
     }
@@ -270,6 +275,6 @@ public class NamedPipeSinkTests
 
     private ITestOutputHelper Output { get; set; }
 
-    
+
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2);
 }
