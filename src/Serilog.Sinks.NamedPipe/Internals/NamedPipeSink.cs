@@ -34,7 +34,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
         Worker = Task.Factory.StartNew(
             StartAsyncMessagePump,
-            default(CancellationToken),
+            SinkCancellation.Token,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default
         ).Unwrap();
@@ -139,9 +139,9 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     public void Dispose()
     {
         try {
+            Channel.Writer.Complete();
             SinkCancellation.Cancel();
             SinkCancellation.Dispose();
-            Channel.Writer.Complete();
         } catch {
             //Ignored
         }

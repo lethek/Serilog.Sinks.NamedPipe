@@ -212,15 +212,14 @@ public class NamedPipeSinkTests
             sink.OnMessagePumpStopped += _ => stoppedSemaphore.Release();
             reader = sink.Channel.Reader;
             worker = sink.Worker;
-            sink.Dispose();
         }
 
         //Wait until the message pump has stopped
         await stoppedSemaphore.WaitAsync(DefaultTimeout);
 
         //The reader and worker tasks should now be completed
-        Assert.True(reader.Completion.IsCompleted);
-        Assert.True(worker.IsCompleted);
+        Assert.True(reader.Completion.IsCompleted, "Reader should be completed");
+        Assert.True(worker.IsCompleted, "Worker task should be completed");
     }
 
 
