@@ -31,7 +31,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             });
 
         Worker = Task.Factory.StartNew(
-            StartAsyncLogEventPump,
+            StartAsyncMessagePump,
             SinkCancellation.Token,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default
@@ -39,9 +39,11 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    internal event NamedPipeSinkEventHandler<PipeStream>? OnConnectedPipe;
-    internal event NamedPipeSinkEventHandler<PipeStream>? OnBrokenPipe;
-    internal event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
+    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeConnected;
+    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeBroken;
+    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeDisconnected;
+    public event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
+    public event NamedPipeSinkEventHandler? OnMessagePumpStopped;
 
 
     public static PipeStreamFactory CreateNamedPipeClientFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
@@ -74,13 +76,13 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
         => Channel.Writer.TryWrite(logEvent);
 
 
-    private async Task StartAsyncLogEventPump()
+    private async Task StartAsyncMessagePump()
     {
         try {
             while (!SinkCancellation.Token.IsCancellationRequested) {
                 using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                 try {
-                    OnConnectedPipe?.Invoke(this, pipe);
+                    OnPipeConnected?.Invoke(this, pipe);
                     using var pipeWriter = new StreamWriter(pipe, Encoding) { AutoFlush = true };
 
                     //A single emitted LogEvent may require several writes (depending on the Formatter). CoalescingTextWriter
@@ -102,13 +104,17 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                     }
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
                     SelfLog.WriteLine("Broken pipe");
-                    OnBrokenPipe?.Invoke(this, pipe);
+                    OnPipeBroken?.Invoke(this, pipe);
+                } finally {
+                    OnPipeDisconnected?.Invoke(this, pipe);
                 }
             }
         } catch (OperationCanceledException) {
             //Cancellation has been signalled, ignore the exception and just exit the pump
         } catch (Exception ex) {
             SelfLog.WriteLine("Unable to continue writing log events to named pipe: {0}", ex);
+        } finally {
+            OnMessagePumpStopped?.Invoke(this);
         }
     }
 

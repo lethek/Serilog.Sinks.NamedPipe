@@ -193,22 +193,19 @@ public class NamedPipeSinkTests
         ChannelReader<LogEvent> reader;
         Task worker;
 
-        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(GeneratePipeName());
+        var hypothesis = Hypothesis.For<bool>();
 
+        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(GeneratePipeName());
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
+            sink.OnMessagePumpStopped += _ => hypothesis.Test(true);
             reader = sink.Channel.Reader;
             worker = sink.Worker;
         }
 
-        //The reader and worker should be completed when the sink is disposed.
-        //Wait until those tasks are completed, or until a timeout occurs.
-        using var timeout = new CancellationTokenSource(DefaultTimeout);
-        await Task.WhenAny(
-            Task.WhenAll(reader.Completion, worker),
-            timeout.Token.ToTask()
-        );
+        //Validate whether the sink's message-pump worker signals that it has stopped, upon disposal
+        await hypothesis.First(_ => true).Validate(DefaultTimeout);
 
-        Assert.False(timeout.Token.IsCancellationRequested);
+        //The reader and worker tasks should now be completed
         Assert.True(reader.Completion.IsCompleted);
         Assert.True(worker.IsCompleted);
     }
