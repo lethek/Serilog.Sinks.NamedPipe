@@ -205,17 +205,17 @@ public class NamedPipeSinkTests
         ChannelReader<LogEvent> reader;
         Task worker;
 
-        var hypothesis = Hypothesis.For<bool>();
+        using var stoppedSemaphore = new SemaphoreSlim(0, 1);
 
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(GeneratePipeName());
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
-            sink.OnMessagePumpStopped += _ => hypothesis.Test(true);
+            sink.OnMessagePumpStopped += _ => stoppedSemaphore.Release();
             reader = sink.Channel.Reader;
             worker = sink.Worker;
         }
 
-        //Validate whether the sink's message-pump worker signals that it has stopped, upon disposal
-        await hypothesis.First(_ => true).Validate(DefaultTimeout);
+        //Wait until the message pump has stopped
+        await stoppedSemaphore.WaitAsync(DefaultTimeout);
 
         //The reader and worker tasks should now be completed
         Assert.True(reader.Completion.IsCompleted);
