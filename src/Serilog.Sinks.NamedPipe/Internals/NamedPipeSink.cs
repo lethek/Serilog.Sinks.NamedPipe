@@ -2,6 +2,8 @@
 using System.Text;
 using System.Threading.Channels;
 
+using JetBrains.Annotations;
+
 using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -39,11 +41,14 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeConnected;
-    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeBroken;
-    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeDisconnected;
-    public event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
-    public event NamedPipeSinkEventHandler? OnMessagePumpStopped;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler? OnMessagePumpStopped;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeConnected;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeBroken;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeDisconnected;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler<LogEvent>? OnQueueSuccess;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler<LogEvent>? OnQueueFailure;
+    [UsedImplicitly] public event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
+    [UsedImplicitly] public event NamedPipeSinkErrorEventHandler<LogEvent>? OnWriteFailure;
 
 
     public static PipeStreamFactory CreateNamedPipeClientFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
@@ -56,6 +61,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             await pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
             return pipe;
         };
+        
     }
 
 
@@ -73,7 +79,13 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
 
     public void Emit(LogEvent logEvent)
-        => Channel.Writer.TryWrite(logEvent);
+    {
+        if (Channel.Writer.TryWrite(logEvent)) {
+            OnQueueSuccess?.Invoke(this, logEvent);
+        } else {
+            OnQueueFailure?.Invoke(this, logEvent);
+        }
+    }
 
 
     private async Task StartAsyncMessagePump()
@@ -94,12 +106,17 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
                     while (await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
                         if (Channel.Reader.TryPeek(out var logEvent)) {
-                            Formatter.Format(logEvent, writer);
-                            //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
-                            await writer.FlushAsync();
-                            //Now logEvent has been successfully written to the pipe, we can remove it from the queue
-                            Channel.Reader.TryRead(out _);
-                            OnWriteSuccess?.Invoke(this, logEvent);
+                            try {
+                                Formatter.Format(logEvent, writer);
+                                //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
+                                await writer.FlushAsync();
+                                //Now logEvent has been successfully written to the pipe, we can remove it from the queue
+                                Channel.Reader.TryRead(out _);
+                                OnWriteSuccess?.Invoke(this, logEvent);
+                            } catch (Exception ex) {
+                                OnWriteFailure?.Invoke(this, logEvent, ex);
+                                throw;
+                            }
                         }
                     }
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
@@ -129,7 +146,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             //Ignored
         }
     }
-
+    
 
     internal protected readonly CancellationTokenSource SinkCancellation = new();
     internal protected readonly ITextFormatter Formatter;
