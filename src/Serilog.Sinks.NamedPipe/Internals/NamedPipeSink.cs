@@ -93,38 +93,42 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     {
         try {
             while (!SinkCancellation.Token.IsCancellationRequested) {
-                using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                 try {
-                    OnPipeConnected?.Invoke(this, pipe);
-                    using var pipeWriter = new StreamWriter(pipe, Encoding) { AutoFlush = true };
+                    using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
+                    try {
+                        OnPipeConnected?.Invoke(this, pipe);
+                        using var pipeWriter = new StreamWriter(pipe, Encoding) {AutoFlush = true};
 
-                    //A single emitted LogEvent may require several writes (depending on the Formatter). CoalescingTextWriter
-                    //allows us to batch those writes into a single write that occurs when we manually call Flush/FlushAsync.
-                    //It's desirable to write a LogEvent in a single write when the underlying named-pipe is operating in the
-                    //PipeTransmissionMode.Message mode. If we don't use a single write per LogEvent, the reader at the other
-                    //end of the named-pipe may have difficulty determining where one LogEvent ends and another begins.
-                    using var writer = new CoalescingTextWriter(pipeWriter);
+                        //A single emitted LogEvent may require several writes (depending on the Formatter). CoalescingTextWriter
+                        //allows us to batch those writes into a single write that occurs when we manually call Flush/FlushAsync.
+                        //It's desirable to write a LogEvent in a single write when the underlying named-pipe is operating in the
+                        //PipeTransmissionMode.Message mode. If we don't use a single write per LogEvent, the reader at the other
+                        //end of the named-pipe may have difficulty determining where one LogEvent ends and another begins.
+                        using var writer = new CoalescingTextWriter(pipeWriter);
 
-                    while (await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
-                        if (Channel.Reader.TryPeek(out var logEvent)) {
-                            try {
-                                Formatter.Format(logEvent, writer);
-                                //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
-                                await writer.FlushAsync().ConfigureAwait(false);
-                                //Now logEvent has been successfully written to the pipe, we can remove it from the queue
-                                Channel.Reader.TryRead(out _);
-                                OnWriteSuccess?.Invoke(this, logEvent);
-                            } catch (Exception ex) {
-                                OnWriteFailure?.Invoke(this, logEvent, ex);
-                                throw;
+                        while (await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
+                            if (Channel.Reader.TryPeek(out var logEvent)) {
+                                try {
+                                    Formatter.Format(logEvent, writer);
+                                    //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
+                                    await writer.FlushAsync().ConfigureAwait(false);
+                                    //Now logEvent has been successfully written to the pipe, we can remove it from the queue
+                                    Channel.Reader.TryRead(out _);
+                                    OnWriteSuccess?.Invoke(this, logEvent);
+                                } catch (Exception ex) {
+                                    OnWriteFailure?.Invoke(this, logEvent, ex);
+                                    throw;
+                                }
                             }
                         }
+                    } catch (Exception ex) when (ex is not OperationCanceledException) {
+                        SelfLog.WriteLine("Broken pipe");
+                        OnPipeBroken?.Invoke(this, pipe);
+                    } finally {
+                        OnPipeDisconnected?.Invoke(this, pipe);
                     }
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
-                    SelfLog.WriteLine("Broken pipe");
-                    OnPipeBroken?.Invoke(this, pipe);
-                } finally {
-                    OnPipeDisconnected?.Invoke(this, pipe);
+                    OnMessagePumpError?.Invoke(this, ex);
                 }
             }
         } catch (OperationCanceledException) {
