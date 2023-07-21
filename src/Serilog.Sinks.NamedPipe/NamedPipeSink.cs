@@ -117,10 +117,10 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    protected internal readonly CancellationTokenSource SinkCancellation = new();
-    protected internal readonly ITextFormatter Formatter;
-    protected internal readonly Channel<LogEvent> Channel;
-    protected internal readonly PipeStreamFactory PipeFactory;
-    protected internal readonly Encoding Encoding;
-    protected internal readonly Task Worker;
+    internal protected readonly CancellationTokenSource SinkCancellation = new();
+    internal protected readonly ITextFormatter Formatter;
+    internal protected readonly Channel<LogEvent> Channel;
+    internal protected readonly PipeStreamFactory PipeFactory;
+    internal protected readonly Encoding Encoding;
+    internal protected readonly Task Worker;
 }

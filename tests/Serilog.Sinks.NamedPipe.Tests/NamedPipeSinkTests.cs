@@ -144,6 +144,7 @@ public class NamedPipeSinkTests
         for (int i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
+        await Task.Yield();
 
         //There should not be any more log events queued up
         Assert.Equal(0, sink.Channel.Reader.Count);
@@ -173,6 +174,7 @@ public class NamedPipeSinkTests
         for (int i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
+        await Task.Yield();
 
         //There should not be any more log events queued up
         Assert.Equal(0, sink.Channel.Reader.Count);
@@ -180,7 +182,7 @@ public class NamedPipeSinkTests
 
 
     [Fact]
-    public void Dispose_ShouldCancelPumpAndCompleteReader()
+    public async Task Dispose_ShouldCancelPumpAndCompleteReader()
     {
         ChannelReader<LogEvent> reader;
         Task worker;
@@ -192,8 +194,17 @@ public class NamedPipeSinkTests
             worker = sink.Worker;
         }
 
-        //The reader should be completed when the sink is disposed
-        Assert.True(Task.WaitAll(new[] { reader.Completion, worker }, timeout: TimeSpan.FromSeconds(1)));
+        //The reader and worker should be completed when the sink is disposed.
+        //Wait until those tasks are completed, or until a timeout occurs.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        await Task.WhenAny(
+            Task.WhenAll(reader.Completion, worker),
+            timeout.Token.ToTask()
+        );
+
+        Assert.False(timeout.Token.IsCancellationRequested);
+        Assert.True(reader.Completion.IsCompleted);
+        Assert.True(worker.IsCompleted);
     }
 
 

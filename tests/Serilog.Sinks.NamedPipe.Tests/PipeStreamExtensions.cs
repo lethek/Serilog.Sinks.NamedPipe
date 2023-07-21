@@ -26,7 +26,7 @@ public static class PipeStreamExtensions
                     break;
                 }
 
-                messageBuilder.Append(buffer.AsSpan().Slice(0, bytesRead));
+                messageBuilder.Append(buffer.AsSpan()[..bytesRead]);
 
                 if (pipe.IsMessageComplete) {
                     break;
@@ -42,6 +42,6 @@ public static class PipeStreamExtensions
     }
 
 
-    private static ObjectPoolProvider ObjectPoolProvider = new DefaultObjectPoolProvider();
-    private static ObjectPool<StringBuilder> StringBuilderPool = ObjectPoolProvider.CreateStringBuilderPool();
+    private static readonly ObjectPoolProvider ObjectPoolProvider = new DefaultObjectPoolProvider();
+    private static readonly ObjectPool<StringBuilder> StringBuilderPool = ObjectPoolProvider.CreateStringBuilderPool();
 }
