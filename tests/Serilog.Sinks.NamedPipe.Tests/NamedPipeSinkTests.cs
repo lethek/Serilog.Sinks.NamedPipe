@@ -209,7 +209,7 @@ public class NamedPipeSinkTests
     public async Task Dispose_ShouldCancelPumpAndCompleteReader()
     {
         Task worker;
-        ChannelReader<LogEvent> reader;
+        Channel<LogEvent> channel;
 
         using var stoppedSemaphore = new SemaphoreSlim(0, 1);
 
@@ -225,14 +225,17 @@ public class NamedPipeSinkTests
             sink.OnPipeBroken += (_, _) => Output.WriteLine("OnPipeBroken");
             sink.OnPipeDisconnected += (_, _) => Output.WriteLine("OnPipeDisconnected");
 
-            reader = sink.Channel.Reader;
+            channel = sink.Channel;
             worker = sink.Worker;
 
-            //NOTE: Shouldn't need to open this client connection here, but it's the only way to reliably run this
-            //unit-test and avoid a bug in old .NET versions (https://github.com/dotnet/runtime/issues/40289) causing
-            //the server to hang forever on Unix systems.
+            //NOTE: Shouldn't need the following NamedPipeClientStream code below, but it's the only way to reliably run
+            //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) causing the
+            //server to hang forever on Unix systems.
             await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await client.ConnectAsync();
+            using var reader = new StreamReader(client);
+            sink.Emit(CreateEvent("dummy log"));
+            await RenderNextLogEventAsync(reader);
         }
 
         //Wait until the message pump has stopped
@@ -240,7 +243,7 @@ public class NamedPipeSinkTests
 
         //The reader and worker tasks should now be completed
         Output.WriteLine("Message pump status: " + worker.Status.ToString());
-        Assert.True(reader.Completion.IsCompleted, "Reader should be completed");
+        Assert.True(channel.Reader.Completion.IsCompleted, "Reader should be completed");
         Assert.True(worker.IsCompleted, "Worker task should be completed");
     }
 
