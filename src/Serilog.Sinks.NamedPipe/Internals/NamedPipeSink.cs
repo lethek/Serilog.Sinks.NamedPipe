@@ -91,7 +91,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     private async Task StartAsyncMessagePump()
     {
         try {
-            while (!SinkCancellation.Token.IsCancellationRequested) {
+            while (true) {
                 try {
                     using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                     try {
@@ -129,6 +129,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
                     OnMessagePumpError?.Invoke(this, ex);
                 }
+                SinkCancellation.Token.ThrowIfCancellationRequested();
             }
         } catch (OperationCanceledException) {
             //Cancellation has been signalled, ignore the exception and just exit the pump

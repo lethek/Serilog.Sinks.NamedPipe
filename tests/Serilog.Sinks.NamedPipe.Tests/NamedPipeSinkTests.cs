@@ -231,7 +231,7 @@ public class NamedPipeSinkTests
             //NOTE: Shouldn't need to open this client connection here, but it's the only way to reliably run this
             //unit-test and avoid a bug in old .NET versions (https://github.com/dotnet/runtime/issues/40289) causing
             //the server to hang forever on Unix systems.
-            await using var client = new NamedPipeClientStream(pipeName);
+            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await client.ConnectAsync();
         }
 
