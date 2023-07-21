@@ -52,9 +52,12 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeClient_WhenNamedPipeIsBroken_ShouldReconnect()
     {
+        using var pipeBrokenSemaphore = new SemaphoreSlim(0, 1);
+
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
         await using (var client = new NamedPipeServerStream(pipeName)) {
@@ -69,6 +72,9 @@ public class NamedPipeSinkTests
 
         //Logging while the pipe is broken allows the sink to detect and start reconnecting
         sink.Emit(CreateEvent("Detect broken pipe"));
+
+        //Wait for the broken pipe to be detected before proceeding with trying to re-establish the connection
+        await pipeBrokenSemaphore.WaitAsync(DefaultTimeout);
 
 
         //Create a second connection to read from the pipe
@@ -89,9 +95,12 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeServer_WhenNamedPipeIsBroken_ShouldReconnect()
     {
+        using var pipeBrokenSemaphore = new SemaphoreSlim(0, 1);
+
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
         await using (var client = new NamedPipeClientStream(pipeName)) {
@@ -106,6 +115,9 @@ public class NamedPipeSinkTests
 
         //Logging while the pipe is broken allows the sink to detect and start reconnecting
         sink.Emit(CreateEvent("Detect broken pipe"));
+
+        //Wait for the broken pipe to be detected before proceeding with trying to re-establish the connection
+        await pipeBrokenSemaphore.WaitAsync(DefaultTimeout);
 
 
         //Create a second connection to read from the pipe
