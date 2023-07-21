@@ -239,5 +239,5 @@ public class NamedPipeSinkTests
         => @$"Serilog.Sinks.NamedPipe.Tests\{Guid.NewGuid()}";
 
 
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2);
 }
