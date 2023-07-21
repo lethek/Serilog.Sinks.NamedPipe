@@ -9,7 +9,7 @@ using Serilog.Formatting;
 using Serilog.Formatting.Compact;
 
 
-namespace Serilog.Sinks.NamedPipe;
+namespace Serilog.Sinks.NamedPipe.Internals;
 
 internal class NamedPipeSink : ILogEventSink, IDisposable
 {
@@ -37,6 +37,11 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             TaskScheduler.Default
         ).Unwrap();
     }
+
+
+    internal event NamedPipeSinkEventHandler<PipeStream>? OnConnectedPipe;
+    internal event NamedPipeSinkEventHandler<PipeStream>? OnBrokenPipe;
+    internal event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
 
 
     public static PipeStreamFactory CreateNamedPipeClientFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
@@ -75,6 +80,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             while (!SinkCancellation.Token.IsCancellationRequested) {
                 using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                 try {
+                    OnConnectedPipe?.Invoke(this, pipe);
                     using var pipeWriter = new StreamWriter(pipe, Encoding) { AutoFlush = true };
 
                     //A single emitted LogEvent may require several writes (depending on the Formatter). CoalescingTextWriter
@@ -91,10 +97,12 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                             await writer.FlushAsync();
                             //Now logEvent has been successfully written to the pipe, we can remove it from the queue
                             Channel.Reader.TryRead(out _);
+                            OnWriteSuccess?.Invoke(this, logEvent);
                         }
                     }
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
                     SelfLog.WriteLine("Broken pipe");
+                    OnBrokenPipe?.Invoke(this, pipe);
                 }
             }
         } catch (OperationCanceledException) {

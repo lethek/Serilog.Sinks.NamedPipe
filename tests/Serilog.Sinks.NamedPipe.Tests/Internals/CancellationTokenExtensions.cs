@@ -9,7 +9,7 @@ internal static class CancellationTokenExtensions
         }
 
         var tcs = new TaskCompletionSource<bool>();
-        cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).SetResult(true), tcs);
+        cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).SetResult(true), tcs);
         return tcs.Task;
     }
 }

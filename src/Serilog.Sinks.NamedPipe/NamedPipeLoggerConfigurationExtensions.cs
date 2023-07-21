@@ -8,6 +8,7 @@ using Serilog.Formatting;
 using Serilog.Formatting.Compact;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.NamedPipe;
+using Serilog.Sinks.NamedPipe.Internals;
 
 
 // ReSharper disable once CheckNamespace

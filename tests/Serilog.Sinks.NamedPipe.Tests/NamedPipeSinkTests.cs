@@ -1,10 +1,12 @@
 using System.IO.Pipes;
-using System.Text;
 using System.Threading.Channels;
+
+using Hypothesist;
 
 using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
+using Serilog.Sinks.NamedPipe.Internals;
 
 
 namespace Serilog.Sinks.NamedPipe.Tests;
@@ -14,7 +16,7 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeServer_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
-        string pipeName = GeneratePipeName();
+        var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
@@ -32,7 +34,7 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeClient_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
-        string pipeName = GeneratePipeName();
+        var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
@@ -50,7 +52,7 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeClient_WhenNamedPipeIsBroken_ShouldReconnect()
     {
-        string pipeName = GeneratePipeName();
+        var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
@@ -87,7 +89,7 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeServer_WhenNamedPipeIsBroken_ShouldReconnect()
     {
-        string pipeName = GeneratePipeName();
+        var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
@@ -124,58 +126,64 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeServer_WhenEmittingWhileDisconnected_ShouldQueueLogEventsUpToCapacity()
     {
-        string pipeName = GeneratePipeName();
+        var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
-        for (int i = 0; i < 20; i++) {
+        for (var i = 0; i < 20; i++) {
             sink.Emit(CreateEvent(i.ToString()));
         }
 
-        //We set capacity to 10, so we should have only the first 10 log events queued up; the rest should have been dropped
+        //We had set capacity to 10, so only the first 10 log events should be queued up; the rest should have been dropped
         Assert.Equal(10, sink.Channel.Reader.Count);
 
-        //Allow those 10 queued log events to be delivered
+        //Subscribe for notifications of successful log writes and inform the hypothesis of remaining queue size
+        var hypothesis = Hypothesis.For<int>();
+        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.Channel.Reader.Count);
+
+        //Allow all of those 10 queued log events to be delivered
         await using var client = new NamedPipeClientStream(pipeName);
         await client.ConnectAsync();
         using var reader = new StreamReader(client);
-        for (int i = 0; i < 10; i++) {
+        for (var i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
-        await Task.Yield();
 
-        //There should not be any more log events queued up
-        Assert.Equal(0, sink.Channel.Reader.Count);
+        //Validate the hypothesis that there are no more log events queued up
+        await hypothesis.Any(queueSize => queueSize == 0).Validate(DefaultTimeout);
     }
 
 
     [Fact]
     public async Task NamedPipeClient_WhenEmittingWhileDisconnected_ShouldQueueLogEventsUpToCapacity()
     {
-        string pipeName = GeneratePipeName();
+        var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
-        for (int i = 0; i < 20; i++) {
+        for (var i = 0; i < 20; i++) {
             sink.Emit(CreateEvent(i.ToString()));
         }
 
-        //We set capacity to 10, so we should have only the first 10 log events queued up; the rest should have been dropped
+        //We had set capacity to 10, so only the first 10 log events should be queued up; the rest should have been dropped
         Assert.Equal(10, sink.Channel.Reader.Count);
 
-        //Allow those 10 queued log events to be delivered
+        //Subscribe for notifications of successful log writes and inform the hypothesis of remaining queue size
+        var hypothesis = Hypothesis.For<int>();
+        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.Channel.Reader.Count);
+
+        //Allow all of those 10 queued log events to be delivered
         await using var client = new NamedPipeServerStream(pipeName);
         await client.WaitForConnectionAsync();
         using var reader = new StreamReader(client);
-        for (int i = 0; i < 10; i++) {
+        for (var i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
-        await Task.Yield();
 
-        //There should not be any more log events queued up
-        Assert.Equal(0, sink.Channel.Reader.Count);
+        //Validate the hypothesis that there are no more log events queued up
+        await hypothesis.Any(queueSize => queueSize == 0).Validate(DefaultTimeout);
     }
 
 
@@ -194,7 +202,7 @@ public class NamedPipeSinkTests
 
         //The reader and worker should be completed when the sink is disposed.
         //Wait until those tasks are completed, or until a timeout occurs.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        using var timeout = new CancellationTokenSource(DefaultTimeout);
         await Task.WhenAny(
             Task.WhenAll(reader.Completion, worker),
             timeout.Token.ToTask()
@@ -232,4 +240,7 @@ public class NamedPipeSinkTests
 
     private static string GeneratePipeName()
         => @$"Serilog.Sinks.NamedPipe.Tests\{Guid.NewGuid()}";
+
+
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(1);
 }

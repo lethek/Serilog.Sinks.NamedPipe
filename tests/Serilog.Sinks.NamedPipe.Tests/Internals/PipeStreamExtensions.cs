@@ -4,10 +4,9 @@ using System.Text;
 
 using Microsoft.Extensions.ObjectPool;
 
+namespace Serilog.Sinks.NamedPipe.Tests.Internals;
 
-namespace Serilog.Sinks.NamedPipe.Tests;
-
-public static class PipeStreamExtensions
+internal static class PipeStreamExtensions
 {
     public static async Task<string> ReadMessageStringAsync(this PipeStream pipe, Encoding? encoding = null, CancellationToken cancellationToken = default)
     {
@@ -21,7 +20,7 @@ public static class PipeStreamExtensions
         var messageBuilder = StringBuilderPool.Get();
         try {
             while (true) {
-                int bytesRead = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
+                var bytesRead = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
                 if (bytesRead == 0) {
                     break;
                 }
