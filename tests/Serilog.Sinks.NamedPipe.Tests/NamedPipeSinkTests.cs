@@ -133,14 +133,13 @@ public class NamedPipeSinkTests
             sink.Emit(CreateEvent(i.ToString()));
         }
 
-        await using var client = new NamedPipeClientStream(pipeName);
-        await client.ConnectAsync();
-        using var reader = new StreamReader(client);
-
         //We set capacity to 10, so we should have only the first 10 log events queued up; the rest should have been dropped
         Assert.Equal(10, sink.Channel.Reader.Count);
 
         //Allow those 10 queued log events to be delivered
+        await using var client = new NamedPipeClientStream(pipeName);
+        await client.ConnectAsync();
+        using var reader = new StreamReader(client);
         for (int i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
@@ -163,14 +162,13 @@ public class NamedPipeSinkTests
             sink.Emit(CreateEvent(i.ToString()));
         }
 
-        await using var client = new NamedPipeServerStream(pipeName);
-        await client.WaitForConnectionAsync();
-        using var reader = new StreamReader(client);
-
         //We set capacity to 10, so we should have only the first 10 log events queued up; the rest should have been dropped
         Assert.Equal(10, sink.Channel.Reader.Count);
 
         //Allow those 10 queued log events to be delivered
+        await using var client = new NamedPipeServerStream(pipeName);
+        await client.WaitForConnectionAsync();
+        using var reader = new StreamReader(client);
         for (int i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
