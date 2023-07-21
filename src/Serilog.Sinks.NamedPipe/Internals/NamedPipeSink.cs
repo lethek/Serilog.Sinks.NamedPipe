@@ -147,7 +147,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
         try {
             Channel.Writer.Complete();
             SinkCancellation.Cancel();
-            SinkCancellation.Dispose();
+            //SinkCancellation.Dispose();
         } catch {
             //Ignored
         }
