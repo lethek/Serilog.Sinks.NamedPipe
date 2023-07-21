@@ -222,9 +222,9 @@ public class NamedPipeSinkTests
 
             reader = sink.Channel.Reader;
             worker = sink.Worker;
-            await Task.Yield();
+            sink.SinkCancellation.Cancel();
+            await Task.Delay(2000);
         }
-        await Task.Yield();
 
         //Wait until the message pump has stopped
         await stoppedSemaphore.WaitAsync(DefaultTimeout);
