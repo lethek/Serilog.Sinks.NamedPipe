@@ -1,9 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Authors>Michael Monsour</Authors>
+    <Copyright>Copyright © Michael Monsour 2023</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
