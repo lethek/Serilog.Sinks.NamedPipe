@@ -43,7 +43,7 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName, pipeDirection);
+        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName, pipeDirection);
         return NamedPipe(sinkConfiguration, pipeFactory, encoding, formatter, restrictedToMinimumLevel, levelSwitch, bufferSize);
     }
 
@@ -77,7 +77,7 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName, pipeDirection, pipeTransmissionMode);
+        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName, pipeDirection, pipeTransmissionMode);
         return NamedPipe(sinkConfiguration, pipeFactory, encoding, formatter, restrictedToMinimumLevel, levelSwitch, bufferSize);
     }
 

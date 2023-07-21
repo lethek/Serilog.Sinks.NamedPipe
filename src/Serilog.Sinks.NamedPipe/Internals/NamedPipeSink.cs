@@ -52,7 +52,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     [UsedImplicitly] public event NamedPipeSinkErrorEventHandler<LogEvent>? OnWriteFailure;
 
 
-    public static PipeStreamFactory CreateNamedPipeClientFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
+    public static PipeStreamFactory NamedPipeClientConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
     {
         if (String.IsNullOrWhiteSpace(pipeName)) {
             throw new ArgumentNullException(nameof(pipeName));
@@ -62,11 +62,10 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             await pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
             return pipe;
         };
-        
     }
 
 
-    public static PipeStreamFactory CreateNamedPipeServerFactory(string pipeName, PipeDirection direction = PipeDirection.InOut, PipeTransmissionMode transmissionMode = PipeTransmissionMode.Byte)
+    public static PipeStreamFactory NamedPipeServerConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.InOut, PipeTransmissionMode transmissionMode = PipeTransmissionMode.Byte)
     {
         if (String.IsNullOrWhiteSpace(pipeName)) {
             throw new ArgumentNullException(nameof(pipeName));

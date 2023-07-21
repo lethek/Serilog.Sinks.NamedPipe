@@ -22,7 +22,7 @@ public class NamedPipeSinkTests
     public async Task NamedPipeServer_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
+        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         await using var client = new NamedPipeClientStream(pipeName);
@@ -40,7 +40,7 @@ public class NamedPipeSinkTests
     public async Task NamedPipeClient_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
+        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         await using var server = new NamedPipeServerStream(pipeName);
@@ -60,7 +60,7 @@ public class NamedPipeSinkTests
         using var pipeBrokenSemaphore = new SemaphoreSlim(0, 1);
 
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
+        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
@@ -103,7 +103,7 @@ public class NamedPipeSinkTests
         using var pipeBrokenSemaphore = new SemaphoreSlim(0, 1);
 
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
+        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
@@ -144,7 +144,7 @@ public class NamedPipeSinkTests
     public async Task NamedPipeServer_WhenEmittingWhileDisconnected_ShouldQueueLogEventsUpToCapacity()
     {
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(pipeName);
+        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
@@ -176,7 +176,7 @@ public class NamedPipeSinkTests
     public async Task NamedPipeClient_WhenEmittingWhileDisconnected_ShouldQueueLogEventsUpToCapacity()
     {
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.CreateNamedPipeClientFactory(pipeName);
+        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
@@ -207,12 +207,13 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task Dispose_ShouldCancelPumpAndCompleteReader()
     {
-        ChannelReader<LogEvent> reader;
         Task worker;
+        ChannelReader<LogEvent> reader;
 
         using var stoppedSemaphore = new SemaphoreSlim(0, 1);
 
-        var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(GeneratePipeName());
+        var pipeName = GeneratePipeName();
+        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
             sink.OnMessagePumpStopped += _ => { Output.WriteLine("OnMessagePumpStopped"); stoppedSemaphore.Release(); };
             sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: "+ex);
@@ -222,8 +223,11 @@ public class NamedPipeSinkTests
 
             reader = sink.Channel.Reader;
             worker = sink.Worker;
-            sink.SinkCancellation.Cancel();
-            await Task.Delay(2000);
+
+            //NOTE: Shouldn't need to open this client connection here, but it's the only way to reliably run this
+            //unit-test and avoid a bug in old .NET versions (https://github.com/dotnet/runtime/issues/40289) causing
+            //the server to hang forever on Unix systems.
+            await using var client = await NamedPipeSink.NamedPipeClientConnectionFactory(pipeName)(default);
         }
 
         //Wait until the message pump has stopped
