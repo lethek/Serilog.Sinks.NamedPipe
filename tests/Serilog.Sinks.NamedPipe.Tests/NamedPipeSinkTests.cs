@@ -7,12 +7,17 @@ using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
 using Serilog.Sinks.NamedPipe.Internals;
+using Xunit.Abstractions;
 
 
 namespace Serilog.Sinks.NamedPipe.Tests;
 
 public class NamedPipeSinkTests
 {
+    public NamedPipeSinkTests(ITestOutputHelper output)
+        => Output = output;
+
+
     [Fact]
     public async Task NamedPipeServer_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
@@ -209,7 +214,12 @@ public class NamedPipeSinkTests
 
         var pipeFactory = NamedPipeSink.CreateNamedPipeServerFactory(GeneratePipeName());
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
-            sink.OnMessagePumpStopped += _ => stoppedSemaphore.Release();
+            sink.OnMessagePumpStopped += _ => { Output.WriteLine("OnMessagePumpStopped"); stoppedSemaphore.Release(); };
+            sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: "+ex);
+            sink.OnPipeConnected += (_, _) => Output.WriteLine("OnPipeConnected");
+            sink.OnPipeBroken += (_, _) => Output.WriteLine("OnPipeBroken");
+            sink.OnPipeDisconnected += (_, _) => Output.WriteLine("OnPipeDisconnected");
+
             reader = sink.Channel.Reader;
             worker = sink.Worker;
         }
@@ -218,6 +228,7 @@ public class NamedPipeSinkTests
         await stoppedSemaphore.WaitAsync(DefaultTimeout);
 
         //The reader and worker tasks should now be completed
+        Output.WriteLine("Message pump status: "+worker.Status.ToString());
         Assert.True(reader.Completion.IsCompleted, "Reader should be completed");
         Assert.True(worker.IsCompleted, "Worker task should be completed");
     }
@@ -251,5 +262,8 @@ public class NamedPipeSinkTests
         => @$"Serilog.Sinks.NamedPipe.Tests\{Guid.NewGuid()}";
 
 
+    private ITestOutputHelper Output { get; set; }
+
+    
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2);
 }

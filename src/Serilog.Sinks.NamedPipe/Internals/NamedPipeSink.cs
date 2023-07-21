@@ -42,6 +42,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
 
     [UsedImplicitly] public event NamedPipeSinkEventHandler? OnMessagePumpStopped;
+    [UsedImplicitly] public event NamedPipeSinkErrorEventHandler? OnMessagePumpError;
     [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeConnected;
     [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeBroken;
     [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeDisconnected;
@@ -109,7 +110,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                             try {
                                 Formatter.Format(logEvent, writer);
                                 //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
-                                await writer.FlushAsync();
+                                await writer.FlushAsync().ConfigureAwait(false);
                                 //Now logEvent has been successfully written to the pipe, we can remove it from the queue
                                 Channel.Reader.TryRead(out _);
                                 OnWriteSuccess?.Invoke(this, logEvent);
@@ -130,6 +131,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
             //Cancellation has been signalled, ignore the exception and just exit the pump
         } catch (Exception ex) {
             SelfLog.WriteLine("Unable to continue writing log events to named pipe: {0}", ex);
+            OnMessagePumpError?.Invoke(this, ex);
         } finally {
             OnMessagePumpStopped?.Invoke(this);
         }
