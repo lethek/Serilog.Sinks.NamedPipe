@@ -212,6 +212,7 @@ public class NamedPipeSinkTests
             sink.OnMessagePumpStopped += _ => stoppedSemaphore.Release();
             reader = sink.Channel.Reader;
             worker = sink.Worker;
+            sink.Dispose();
         }
 
         //Wait until the message pump has stopped

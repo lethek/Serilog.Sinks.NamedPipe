@@ -34,7 +34,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
         Worker = Task.Factory.StartNew(
             StartAsyncMessagePump,
-            SinkCancellation.Token,
+            default(CancellationToken),
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default
         ).Unwrap();
