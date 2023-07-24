@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Serilog.Sinks.NamedPipe;
+namespace Serilog.Sinks.NamedPipe.Internals;
 
 internal class CoalescingTextWriter : TextWriter
 {
