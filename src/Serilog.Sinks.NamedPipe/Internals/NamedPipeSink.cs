@@ -21,13 +21,13 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
         Encoding = encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         Formatter = formatter ?? new CompactJsonFormatter();
 
-        Channel = (capacity > 0)
-            ? System.Threading.Channels.Channel.CreateBounded<LogEvent>(new BoundedChannelOptions(capacity) {
+        LogChannel = (capacity > 0)
+            ? Channel.CreateBounded<LogEvent>(new BoundedChannelOptions(capacity) {
                 FullMode = BoundedChannelFullMode.DropWrite,
                 SingleWriter = true,
                 SingleReader = true
             })
-            : System.Threading.Channels.Channel.CreateUnbounded<LogEvent>(new UnboundedChannelOptions {
+            : Channel.CreateUnbounded<LogEvent>(new UnboundedChannelOptions {
                 SingleWriter = true,
                 SingleReader = true
             });
@@ -81,7 +81,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
     public void Emit(LogEvent logEvent)
     {
-        if (Channel.Writer.TryWrite(logEvent)) {
+        if (LogChannel.Writer.TryWrite(logEvent)) {
             OnQueueSuccess?.Invoke(this, logEvent);
         } else {
             OnQueueFailure?.Invoke(this, logEvent);
@@ -106,8 +106,8 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                         //end of the named-pipe may have difficulty determining where one LogEvent ends and another begins.
                         using var writer = new CoalescingTextWriter(pipeWriter);
 
-                        while (pipe.IsConnected && await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
-                            if (Channel.Reader.TryPeek(out var logEvent)) {
+                        while (pipe.IsConnected && await LogChannel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
+                            if (LogChannel.Reader.TryPeek(out var logEvent)) {
                                 try {
                                     //Write the LogEvent to the CoalescingTextWriter
                                     Formatter.Format(logEvent, writer);
@@ -116,7 +116,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                                     await writer.FlushAsync().ConfigureAwait(false);
 
                                     //Now logEvent has been successfully written to the pipe, we can remove it from the queue
-                                    Channel.Reader.TryRead(out _);
+                                    LogChannel.Reader.TryRead(out _);
 
                                     //Notify listeners that the write was successful
                                     OnWriteSuccess?.Invoke(this, logEvent);
@@ -134,13 +134,13 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                     } finally {
                         OnPipeDisconnected?.Invoke(this, pipe);
                     }
+
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
                     SelfLog.WriteLine($"Error in message-pump (pump may retry and continue): {ex}");
                     OnMessagePumpError?.Invoke(this, ex);
                 }
             }
-        } catch (OperationCanceledException) {
-            //Cancellation has been signalled, ignore the exception and just exit the pump
+
         } catch (Exception ex) {
             SelfLog.WriteLine($"Fatal error in message-pump (pump will terminate): {ex}");
             OnMessagePumpError?.Invoke(this, ex);
@@ -152,20 +152,37 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
     public void Dispose()
     {
-        try {
-            SinkCancellation.Cancel();
-            SinkCancellation.Dispose();
-            Channel.Writer.Complete();
-        } catch {
-            //Ignored
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_isDisposed) {
+            return;
         }
+
+        if (disposing) {
+            try {
+                SinkCancellation.Cancel();
+                SinkCancellation.Dispose();
+                LogChannel.Writer.Complete();
+            } catch {
+                //Ignored
+            }
+        }
+        _isDisposed = true;
     }
 
 
     internal protected readonly CancellationTokenSource SinkCancellation = new();
     internal protected readonly ITextFormatter Formatter;
-    internal protected readonly Channel<LogEvent> Channel;
+    internal protected readonly Channel<LogEvent> LogChannel;
     internal protected readonly PipeStreamFactory PipeFactory;
     internal protected readonly Encoding Encoding;
     internal protected readonly Task Worker;
+
+
+    private bool _isDisposed;
 }

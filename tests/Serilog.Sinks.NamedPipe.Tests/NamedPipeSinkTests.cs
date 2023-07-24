@@ -36,7 +36,7 @@ public class NamedPipeSinkTests
             sink.OnMessagePumpStopped += _ => { stoppedSemaphore.Release(); };
 
             worker = sink.Worker;
-            reader = sink.Channel.Reader;
+            reader = sink.LogChannel.Reader;
 
             //NOTE: Shouldn't need the following NamedPipeClientStream code below, but it's the only way to reliably run
             //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) which can cause
@@ -189,11 +189,11 @@ public class NamedPipeSinkTests
         }
 
         //We had set capacity to 10, so only the first 10 log events should be queued up; the rest should have been dropped
-        Assert.Equal(10, sink.Channel.Reader.Count);
+        Assert.Equal(10, sink.LogChannel.Reader.Count);
 
         //Subscribe for notifications of successful log writes and inform the hypothesis of remaining queue size
         var hypothesis = Hypothesis.For<int>();
-        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.Channel.Reader.Count);
+        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
         await using var client = new NamedPipeClientStream(pipeName);
@@ -221,11 +221,11 @@ public class NamedPipeSinkTests
         }
 
         //We had set capacity to 10, so only the first 10 log events should be queued up; the rest should have been dropped
-        Assert.Equal(10, sink.Channel.Reader.Count);
+        Assert.Equal(10, sink.LogChannel.Reader.Count);
 
         //Subscribe for notifications of successful log writes and inform the hypothesis of remaining queue size
         var hypothesis = Hypothesis.For<int>();
-        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.Channel.Reader.Count);
+        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
         await using var client = new NamedPipeServerStream(pipeName);
