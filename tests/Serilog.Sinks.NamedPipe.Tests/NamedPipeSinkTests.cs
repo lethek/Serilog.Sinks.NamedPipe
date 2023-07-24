@@ -23,6 +23,38 @@ public class NamedPipeSinkTests
 
 
     [Fact]
+    public async Task Dispose_ShouldCancelPumpAndCompleteReader()
+    {
+        Task worker;
+        ChannelReader<LogEvent> reader;
+
+        using var stoppedSemaphore = new SemaphoreSlim(0, 1);
+
+        var pipeName = GeneratePipeName();
+        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
+        using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
+            sink.OnMessagePumpStopped += _ => { stoppedSemaphore.Release(); };
+
+            worker = sink.Worker;
+            reader = sink.Channel.Reader;
+
+            //NOTE: Shouldn't need the following NamedPipeClientStream code below, but it's the only way to reliably run
+            //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) which can cause
+            //the server to hang forever on Unix systems. Microsoft fixed it in .NET 6.0.
+            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await client.ConnectAsync();
+        }
+
+        //Wait until the message pump has stopped
+        await stoppedSemaphore.WaitAsync(DefaultTimeout);
+
+        //The reader and worker tasks should now be completed
+        Assert.True(worker.IsCompleted, "Worker task should be completed");
+        Assert.True(reader.Completion.IsCompleted, "Channel Reader should be completed");
+    }
+
+
+    [Fact]
     public async Task NamedPipeServer_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
         var pipeName = GeneratePipeName();
@@ -205,49 +237,6 @@ public class NamedPipeSinkTests
 
         //Validate the hypothesis that there are no more log events queued up
         await hypothesis.Any(queueSize => queueSize == 0).Validate(DefaultTimeout);
-    }
-
-
-    [Fact]
-    public async Task Dispose_ShouldCancelPumpAndCompleteReader()
-    {
-        Task worker;
-        Channel<LogEvent> channel;
-
-        using var stoppedSemaphore = new SemaphoreSlim(0, 1);
-
-        var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
-        using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
-            sink.OnMessagePumpStopped += _ => {
-                //Output.WriteLine("OnMessagePumpStopped");
-                stoppedSemaphore.Release();
-            };
-            /*sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: " + ex);
-            sink.OnPipeConnected += (_, _) => Output.WriteLine("OnPipeConnected");
-            sink.OnPipeBroken += (_, _) => Output.WriteLine("OnPipeBroken");
-            sink.OnPipeDisconnected += (_, _) => Output.WriteLine("OnPipeDisconnected");*/
-
-            channel = sink.Channel;
-            worker = sink.Worker;
-
-            //NOTE: Shouldn't need the following NamedPipeClientStream code below, but it's the only way to reliably run
-            //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) causing the
-            //server to hang forever on Unix systems.
-            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            await client.ConnectAsync();
-            using var reader = new StreamReader(client);
-            sink.Emit(CreateEvent("dummy log"));
-            await RenderNextLogEventAsync(reader);
-        }
-
-        //Wait until the message pump has stopped
-        await stoppedSemaphore.WaitAsync(DefaultTimeout);
-
-        //The reader and worker tasks should now be completed
-        Output.WriteLine("Message pump status: " + worker.Status.ToString());
-        Assert.True(channel.Reader.Completion.IsCompleted, "Reader should be completed");
-        Assert.True(worker.IsCompleted, "Worker task should be completed");
     }
 
 
