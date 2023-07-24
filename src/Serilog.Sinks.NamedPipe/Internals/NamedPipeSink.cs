@@ -110,7 +110,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                         using var writer = new CoalescingTextWriter(pipeWriter);
 
                         SelfLog.WriteLine($"{sinkId} Waiting to read");
-                        while (await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
+                        while ( await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
                             SelfLog.WriteLine($"{sinkId} Try peeking");
                             if (Channel.Reader.TryPeek(out var logEvent)) {
                                 try {
@@ -142,7 +142,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                     SelfLog.WriteLine($"{sinkId} Message pump error");
                     OnMessagePumpError?.Invoke(this, ex);
                 }
-                SelfLog.WriteLine($"{sinkId} Requesting cancellation");
+                SelfLog.WriteLine($"{sinkId} Throw if cancellation requested");
                 SinkCancellation.Token.ThrowIfCancellationRequested();
             }
         } catch (OperationCanceledException) {
@@ -162,6 +162,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     {
         try {
             Channel.Writer.Complete();
+            SelfLog.WriteLine($"{GetHashCode()} Requesting cancellation");
             SinkCancellation.Cancel();
             //SinkCancellation.Dispose();
         } catch {
