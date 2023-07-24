@@ -52,6 +52,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     [UsedImplicitly] public event NamedPipeSinkErrorEventHandler<LogEvent>? OnWriteFailure;
 
 
+
     public static PipeStreamFactory NamedPipeClientConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
     {
         if (String.IsNullOrWhiteSpace(pipeName)) {
@@ -90,11 +91,14 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
     private async Task StartAsyncMessagePump()
     {
+        var sinkId = GetHashCode();
         try {
             while (true) {
                 try {
+                    SelfLog.WriteLine($"{sinkId} Pipe connecting");
                     using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                     try {
+                        SelfLog.WriteLine($"{sinkId} Pipe connected");
                         OnPipeConnected?.Invoke(this, pipe);
                         using var pipeWriter = new StreamWriter(pipe, Encoding) {AutoFlush = true};
 
@@ -105,38 +109,48 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                         //end of the named-pipe may have difficulty determining where one LogEvent ends and another begins.
                         using var writer = new CoalescingTextWriter(pipeWriter);
 
+                        SelfLog.WriteLine($"{sinkId} Waiting to read");
                         while (await Channel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
+                            SelfLog.WriteLine($"{sinkId} Try peeking");
                             if (Channel.Reader.TryPeek(out var logEvent)) {
                                 try {
+                                    SelfLog.WriteLine($"{sinkId} Try writing");
                                     Formatter.Format(logEvent, writer);
                                     //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
                                     await writer.FlushAsync().ConfigureAwait(false);
                                     //Now logEvent has been successfully written to the pipe, we can remove it from the queue
                                     Channel.Reader.TryRead(out _);
+                                    SelfLog.WriteLine($"{sinkId} Write success");
                                     OnWriteSuccess?.Invoke(this, logEvent);
                                 } catch (Exception ex) {
+                                    SelfLog.WriteLine($"{sinkId} Write failure");
                                     OnWriteFailure?.Invoke(this, logEvent, ex);
                                     throw;
                                 }
                             }
                         }
                     } catch (Exception ex) when (ex is not OperationCanceledException) {
-                        SelfLog.WriteLine("Broken pipe");
+                        SelfLog.WriteLine($"{sinkId} Pipe broken");
                         OnPipeBroken?.Invoke(this, pipe);
                     } finally {
+                        SelfLog.WriteLine($"{sinkId} Pipe disconnected");
                         OnPipeDisconnected?.Invoke(this, pipe);
                     }
                 } catch (Exception ex) when (ex is not OperationCanceledException) {
+                    SelfLog.WriteLine($"{sinkId} Message pump error");
                     OnMessagePumpError?.Invoke(this, ex);
                 }
+                SelfLog.WriteLine($"{sinkId} Requesting cancellation");
                 SinkCancellation.Token.ThrowIfCancellationRequested();
             }
         } catch (OperationCanceledException) {
             //Cancellation has been signalled, ignore the exception and just exit the pump
+            SelfLog.WriteLine($"{sinkId} Message pump cancelled");
         } catch (Exception ex) {
-            SelfLog.WriteLine("Unable to continue writing log events to named pipe: {0}", ex);
+            SelfLog.WriteLine($"{sinkId} Unable to continue writing log events to named pipe: {0}", ex);
             OnMessagePumpError?.Invoke(this, ex);
         } finally {
+            SelfLog.WriteLine($"{sinkId} Message pump stopped");
             OnMessagePumpStopped?.Invoke(this);
         }
     }

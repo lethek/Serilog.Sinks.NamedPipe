@@ -16,7 +16,10 @@ namespace Serilog.Sinks.NamedPipe.Tests;
 public class NamedPipeSinkTests
 {
     public NamedPipeSinkTests(ITestOutputHelper output)
-        => Output = output;
+    {
+        Output = output;
+        Debugging.SelfLog.Enable(Output.WriteLine);
+    }
 
 
     [Fact]
@@ -217,13 +220,13 @@ public class NamedPipeSinkTests
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
             sink.OnMessagePumpStopped += _ => {
-                Output.WriteLine("OnMessagePumpStopped");
+                //Output.WriteLine("OnMessagePumpStopped");
                 stoppedSemaphore.Release();
             };
-            sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: " + ex);
+            /*sink.OnMessagePumpError += (_, ex) => Output.WriteLine("OnMessagePumpError: " + ex);
             sink.OnPipeConnected += (_, _) => Output.WriteLine("OnPipeConnected");
             sink.OnPipeBroken += (_, _) => Output.WriteLine("OnPipeBroken");
-            sink.OnPipeDisconnected += (_, _) => Output.WriteLine("OnPipeDisconnected");
+            sink.OnPipeDisconnected += (_, _) => Output.WriteLine("OnPipeDisconnected");*/
 
             channel = sink.Channel;
             worker = sink.Worker;
