@@ -129,6 +129,8 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                                 }
                             }
                         }
+                        SelfLog.WriteLine($"{sinkId} No more events to write");
+
                     } catch (Exception ex) when (ex is not OperationCanceledException) {
                         SelfLog.WriteLine($"{sinkId} Pipe broken");
                         OnPipeBroken?.Invoke(this, pipe);
