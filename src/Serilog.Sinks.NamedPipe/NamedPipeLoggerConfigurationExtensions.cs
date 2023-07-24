@@ -100,7 +100,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     /// until room is made in the queue. The default is 10000. Set this to 0 for an unbounded queue.</param>
     /// <returns>A <see cref="LoggerConfiguration"/> allowing configuration to continue.</returns>
     public static LoggerConfiguration NamedPipe(
-        LoggerSinkConfiguration sinkConfiguration,
+        this LoggerSinkConfiguration sinkConfiguration,
         PipeStreamFactory pipeStreamFactory,
         Encoding? encoding = null,
         ITextFormatter? formatter = null,
