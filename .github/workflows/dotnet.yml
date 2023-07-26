@@ -18,19 +18,19 @@ jobs:
         fetch-depth: 0
 
     - name: Setup GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.15
+      uses: gittools/actions/gitversion/setup@v0.10.2
       with:
         versionSpec: 5.x
 
     - name: Execute GitVersion
-      uses: gittools/actions/gitversion/execute@v0.9.15
+      uses: gittools/actions/gitversion/execute@v0.10.2
       id: gitversion
       with:
         additionalArguments: /output BuildServer
         useConfigFile: true
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: |
           5.x
