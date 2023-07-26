@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading.Channels;
 
 using Hypothesist;
@@ -240,8 +241,76 @@ public class NamedPipeSinkTests
     }
 
 
+    [SkippableFact]
+    public async Task NamedPipeServerWithCustomFactory_WhenEmittingMessages_ShouldWriteToNamedPipeCorrectly()
+    {
+        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
+        const string expectedMessageText = "Sink should write this log as a named-pipe Message rather than a stream of bytes";
+        var pipeName = GeneratePipeName();
+
+        //Custom factory which creates a named-pipe server stream and waits for a client to connect
+        PipeStreamFactory pipeFactory = async cancellationToken => {
+            //A named-pipe running in Message transmision-mode requires a bi-directional pipe (PipeDirection.InOut)
+            var client = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message);
+            await client.WaitForConnectionAsync(cancellationToken);
+            return client;
+        };
+        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+
+        //Create a client to connect to the sink's named-pipe server
+        await using var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+        await pipeClient.ConnectAsync();
+        //ReadMode must be set to PipeTransmissionMode.Message for ReadMessageStringAsync to work
+        pipeClient.ReadMode = PipeTransmissionMode.Message;
+
+        sink.Emit(CreateEvent(expectedMessageText));
+
+        //ReadMessageStringAsync is an extension method defined in the PipeStreamExtensions class of this project
+        var message = await pipeClient.ReadMessageStringAsync();
+        var logEvent = DeserializeClef(message).Single();
+        var renderedMessageText = logEvent.RenderMessage();
+
+        Assert.Equal(expectedMessageText, renderedMessageText);
+    }
+
+
+
+
+    [SkippableFact]
+    public async Task NamedPipeClientWithCustomFactory_WhenEmittingMessages_ShouldWriteToNamedPipeCorrectly()
+    {
+        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
+        const string expectedMessageText = "Sink should write this log as a named-pipe Message rather than a stream of bytes";
+        var pipeName = GeneratePipeName();
+
+        //Custom factory which creates a named-pipe server stream and waits for a client to connect
+        PipeStreamFactory pipeFactory = async cancellationToken => {
+            //A named-pipe running in Message transmision-mode requires a bi-directional pipe (PipeDirection.InOut)
+            var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await client.ConnectAsync(cancellationToken);
+            return client;
+        };
+        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+
+        //Create a server for the sink's named-pipe client to connect to
+        await using var pipeServer = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
+        await pipeServer.WaitForConnectionAsync();
+
+        sink.Emit(CreateEvent(expectedMessageText));
+
+        //ReadMessageStringAsync is an extension method defined in the PipeStreamExtensions class of this project
+        var message = await pipeServer.ReadMessageStringAsync();
+        var logEvent = DeserializeClef(message).Single();
+        var renderedMessageText = logEvent.RenderMessage();
+
+        Assert.Equal(expectedMessageText, renderedMessageText);
+    }
+
+
     private static async Task<string> RenderNextLogEventAsync(TextReader reader)
-        => DeserializeClef(await reader.ReadLineAsync()).First().RenderMessage();
+        => DeserializeClef(await reader.ReadLineAsync()).Single().RenderMessage();
 
 
     private static IEnumerable<LogEvent> DeserializeClef(string? json)
