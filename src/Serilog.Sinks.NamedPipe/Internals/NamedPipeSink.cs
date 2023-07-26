@@ -97,14 +97,13 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                     using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
                     try {
                         OnPipeConnected?.Invoke(this, pipe);
-                        using var pipeWriter = new StreamWriter(pipe, Encoding, 1024, leaveOpen: true) { AutoFlush = true };
 
-                        //A single emitted LogEvent may require several writes (depending on the Formatter). CoalescingTextWriter
+                        //A single emitted LogEvent may require several writes (depending on the Formatter). CoalescingStreamWriter
                         //allows us to batch those writes into a single write that occurs when we manually call Flush/FlushAsync.
                         //It's desirable to write a LogEvent in a single write when the underlying named-pipe is operating in the
                         //PipeTransmissionMode.Message mode. If we don't use a single write per LogEvent, the reader at the other
                         //end of the named-pipe may have difficulty determining where one LogEvent ends and another begins.
-                        using var writer = new CoalescingTextWriter(pipeWriter);
+                        using var writer = new CoalescingStreamWriter(pipe, Encoding, leaveOpen: true);
 
                         while (pipe.IsConnected && await LogChannel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
                             if (LogChannel.Reader.TryPeek(out var logEvent)) {
