@@ -28,8 +28,8 @@ This sink will create a NamedPipeServerStream and wait for a connection from a n
 
 ```csharp
 Log.Logger = new LoggerConfiguration()
-	.WriteTo.NamedPipeServer("pipeName")
-	.CreateLogger();
+    .WriteTo.NamedPipeServer("pipeName")
+    .CreateLogger();
 ```
 
 ### 2. Host a NamedPipeClientStream in the sink
@@ -38,8 +38,8 @@ This sink will create a NamedPipeClientStream and connect to a named pipe server
 
 ```csharp
 Log.Logger = new LoggerConfiguration()
-	.WriteTo.NamedPipeClient("pipeName")
-	.CreateLogger();
+    .WriteTo.NamedPipeClient("pipeName")
+    .CreateLogger();
 ```
 
 ### 3. Host any kind of PipeStream in the sink
@@ -52,14 +52,14 @@ Do not allow the stream to be disposed of by the factory, as the sink will dispo
 
 ```csharp
 PipeStreamFactory factory = async cancellationToken => {
-    var client = new NamedPipeServerStream("");
-    await client.WaitForConnectionAsync(cancellationToken);
-    return client;
+    var pipe = new NamedPipeServerStream("pipeName", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
+    await pipe.WaitForConnectionAsync(cancellationToken);
+    return pipe;
 };
 
 Log.Logger = new LoggerConfiguration()
-	.WriteTo.NamedPipe(factory)
-	.CreateLogger();
+    .WriteTo.NamedPipe(factory)
+    .CreateLogger();
 ```
 
 ## Sink Options
