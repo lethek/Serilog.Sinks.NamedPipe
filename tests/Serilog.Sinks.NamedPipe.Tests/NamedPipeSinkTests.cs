@@ -42,7 +42,7 @@ public class NamedPipeSinkTests
             //NOTE: Shouldn't need the following NamedPipeClientStream code below, but it's the only way to reliably run
             //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) which can cause
             //the server to hang forever on Unix systems. Microsoft fixed it in .NET 6.0.
-            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
             await client.ConnectAsync();
         }
 
@@ -62,10 +62,10 @@ public class NamedPipeSinkTests
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
-        await using var client = new NamedPipeClientStream(pipeName);
-        await client.ConnectAsync();
-        using var reader = new StreamReader(client);
-        Assert.True(client.IsConnected);
+        await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
+        await receiver.ConnectAsync();
+        using var reader = new StreamReader(receiver);
+        Assert.True(receiver.IsConnected);
 
         sink.Emit(CreateEvent("Hello unit test"));
 
@@ -80,10 +80,10 @@ public class NamedPipeSinkTests
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
-        await using var server = new NamedPipeServerStream(pipeName);
-        await server.WaitForConnectionAsync();
-        using var reader = new StreamReader(server);
-        Assert.True(server.IsConnected);
+        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        await receiver.WaitForConnectionAsync();
+        using var reader = new StreamReader(receiver);
+        Assert.True(receiver.IsConnected);
 
         sink.Emit(CreateEvent("Hello unit test"));
 
@@ -102,9 +102,9 @@ public class NamedPipeSinkTests
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
-        await using (var client = new NamedPipeServerStream(pipeName)) {
-            await client.WaitForConnectionAsync();
-            using var reader = new StreamReader(client);
+        await using (var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
+            await receiver.WaitForConnectionAsync();
+            using var reader = new StreamReader(receiver);
 
             sink.Emit(CreateEvent("Message while connected"));
 
@@ -120,9 +120,9 @@ public class NamedPipeSinkTests
 
 
         //Create a second connection to read from the pipe
-        await using (var client = new NamedPipeServerStream(pipeName)) {
-            await client.WaitForConnectionAsync();
-            using var reader = new StreamReader(client);
+        await using (var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
+            await receiver.WaitForConnectionAsync();
+            using var reader = new StreamReader(receiver);
 
             //Logs (such as the following) which were queued while the pipe was not connected, are finally delivered here upon reconnection
             Assert.Equal("Detect broken pipe", await RenderNextLogEventAsync(reader));
@@ -145,9 +145,9 @@ public class NamedPipeSinkTests
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
-        await using (var client = new NamedPipeClientStream(pipeName)) {
-            await client.ConnectAsync();
-            using var reader = new StreamReader(client);
+        await using (var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+            await receiver.ConnectAsync();
+            using var reader = new StreamReader(receiver);
 
             sink.Emit(CreateEvent("Message while connected"));
 
@@ -163,9 +163,9 @@ public class NamedPipeSinkTests
 
 
         //Create a second connection to read from the pipe
-        await using (var client = new NamedPipeClientStream(pipeName)) {
-            await client.ConnectAsync();
-            using var reader = new StreamReader(client);
+        await using (var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+            await receiver.ConnectAsync();
+            using var reader = new StreamReader(receiver);
 
             //Logs (such as the following) which were queued while the pipe was not connected, are finally delivered here upon reconnection
             Assert.Equal("Detect broken pipe", await RenderNextLogEventAsync(reader));
@@ -197,9 +197,9 @@ public class NamedPipeSinkTests
         sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
-        await using var client = new NamedPipeClientStream(pipeName);
-        await client.ConnectAsync();
-        using var reader = new StreamReader(client);
+        await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
+        await receiver.ConnectAsync();
+        using var reader = new StreamReader(receiver);
         for (var i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
@@ -229,9 +229,9 @@ public class NamedPipeSinkTests
         sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
-        await using var client = new NamedPipeServerStream(pipeName);
-        await client.WaitForConnectionAsync();
-        using var reader = new StreamReader(client);
+        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        await receiver.WaitForConnectionAsync();
+        using var reader = new StreamReader(receiver);
         for (var i = 0; i < 10; i++) {
             Assert.Equal(i.ToString(), await RenderNextLogEventAsync(reader));
         }
@@ -251,30 +251,28 @@ public class NamedPipeSinkTests
 
         //Custom factory which creates a named-pipe server stream and waits for a client to connect
         PipeStreamFactory pipeFactory = async cancellationToken => {
-            //A named-pipe running in Message transmision-mode requires a bi-directional pipe (PipeDirection.InOut)
-            var client = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message);
+            //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
+            var client = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
             await client.WaitForConnectionAsync(cancellationToken);
             return client;
         };
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Create a client to connect to the sink's named-pipe server
-        await using var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-        await pipeClient.ConnectAsync();
-        //ReadMode must be set to PipeTransmissionMode.Message for ReadMessageStringAsync to work
-        pipeClient.ReadMode = PipeTransmissionMode.Message;
+        await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+        await receiver.ConnectAsync();
+        //ReadMode must be manually set to PipeTransmissionMode.Message after connecting to allow reading Messages on the client side of the pipe
+        receiver.ReadMode = PipeTransmissionMode.Message;
 
         sink.Emit(CreateEvent(expectedMessageText));
 
-        //ReadMessageStringAsync is an extension method defined in the PipeStreamExtensions class of this project
-        var message = await pipeClient.ReadMessageStringAsync();
+        //ReadMessageStringAsync is an extension method defined in the PipeStreamExtensions class of this project and will read an entire message (string)
+        var message = await receiver.ReadMessageStringAsync();
         var logEvent = DeserializeClef(message).Single();
         var renderedMessageText = logEvent.RenderMessage();
 
         Assert.Equal(expectedMessageText, renderedMessageText);
     }
-
-
 
 
     [SkippableFact]
@@ -287,7 +285,7 @@ public class NamedPipeSinkTests
 
         //Custom factory which creates a named-pipe server stream and waits for a client to connect
         PipeStreamFactory pipeFactory = async cancellationToken => {
-            //A named-pipe running in Message transmision-mode requires a bi-directional pipe (PipeDirection.InOut)
+            //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
             var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await client.ConnectAsync(cancellationToken);
             return client;
@@ -295,13 +293,13 @@ public class NamedPipeSinkTests
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Create a server for the sink's named-pipe client to connect to
-        await using var pipeServer = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-        await pipeServer.WaitForConnectionAsync();
+        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
+        await receiver.WaitForConnectionAsync();
 
         sink.Emit(CreateEvent(expectedMessageText));
 
-        //ReadMessageStringAsync is an extension method defined in the PipeStreamExtensions class of this project
-        var message = await pipeServer.ReadMessageStringAsync();
+        //ReadMessageStringAsync is an extension method defined in the PipeStreamExtensions class of this project and will read an entire message (string)
+        var message = await receiver.ReadMessageStringAsync();
         var logEvent = DeserializeClef(message).Single();
         var renderedMessageText = logEvent.RenderMessage();
 

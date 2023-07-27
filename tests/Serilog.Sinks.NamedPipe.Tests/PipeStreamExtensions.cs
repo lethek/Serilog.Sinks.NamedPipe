@@ -7,7 +7,7 @@ namespace Serilog.Sinks.NamedPipe.Tests;
 
 public static class PipeStreamExtensions
 {
-    public static async Task<string?> ReadMessageStringAsync(this PipeStream pipe, Encoding? encoding = null, CancellationToken cancellationToken = default)
+    public static async ValueTask<string?> ReadMessageStringAsync(this PipeStream pipe, Encoding? encoding = null, CancellationToken cancellationToken = default)
     {
         if (pipe.ReadMode != PipeTransmissionMode.Message) {
             throw new InvalidOperationException("ReadMode is not of PipeTransmissionMode.Message.");
@@ -19,7 +19,7 @@ public static class PipeStreamExtensions
 
         try {
             do {
-                int bytesRead = await pipe.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                int bytesRead = await pipe.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
                 if (bytesRead > 0) {
                     memoryStream.Write(buffer.AsSpan()[..bytesRead]);
                 }
@@ -28,9 +28,11 @@ public static class PipeStreamExtensions
             ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        return memoryStream.TryGetBuffer(out var bufferSegment)
-            ? encoding.GetString(bufferSegment.Array!, bufferSegment.Offset, bufferSegment.Count)
-            : encoding.GetString(memoryStream.ToArray());
+        return memoryStream.Length == 0
+            ? null
+            : memoryStream.TryGetBuffer(out var bufferSegment)
+                ? encoding.GetString(bufferSegment.AsSpan())
+                : encoding.GetString(memoryStream.ToArray());
     }
 
 
@@ -46,7 +48,7 @@ public static class PipeStreamExtensions
 
         try {
             do {
-                int bytesRead = pipe.Read(buffer);
+                int bytesRead = pipe.Read(buffer.AsSpan());
                 if (bytesRead > 0) {
                     memoryStream.Write(buffer.AsSpan()[..bytesRead]);
                 }
@@ -55,9 +57,11 @@ public static class PipeStreamExtensions
             ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        return memoryStream.TryGetBuffer(out var bufferSegment)
-            ? encoding.GetString(bufferSegment.Array!, bufferSegment.Offset, bufferSegment.Count)
-            : encoding.GetString(memoryStream.ToArray());
+        return memoryStream.Length == 0
+            ? null
+            : memoryStream.TryGetBuffer(out var bufferSegment)
+                ? encoding.GetString(bufferSegment.AsSpan())
+                : encoding.GetString(memoryStream.ToArray());
     }
 
 

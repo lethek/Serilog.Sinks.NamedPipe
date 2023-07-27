@@ -21,7 +21,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="pipeName">Name of the pipe (assumed to be on the local computer). A pipe client with this name is created.</param>
-    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.InOut"/></param>
+    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.Out"/></param>
     /// <param name="encoding">Character encoding used to write to the named pipe. The default is UTF-8 without BOM.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for the
     /// named pipe. The default is <see cref="CompactJsonFormatter"/>.</param>
@@ -35,7 +35,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     public static LoggerConfiguration NamedPipeClient(
         this LoggerSinkConfiguration sinkConfiguration,
         string pipeName,
-        PipeDirection pipeDirection = PipeDirection.InOut,
+        PipeDirection pipeDirection = PipeDirection.Out,
         Encoding? encoding = null,
         ITextFormatter? formatter = null,
         LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose,
@@ -53,7 +53,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="pipeName">Name of the pipe. A pipe server with this name is created.</param>
-    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.InOut"/></param>
+    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.Out"/></param>
     /// <param name="pipeTransmissionMode">The transmission mode of the pipe. The default is <see cref="E:PipeTransmissionMode.Byte"/>.</param>
     /// <param name="encoding">Character encoding used to write to the named pipe. The default is UTF-8 without BOM.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for the
@@ -68,7 +68,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     public static LoggerConfiguration NamedPipeServer(
         this LoggerSinkConfiguration sinkConfiguration,
         string pipeName,
-        PipeDirection pipeDirection = PipeDirection.InOut,
+        PipeDirection pipeDirection = PipeDirection.Out,
         PipeTransmissionMode pipeTransmissionMode = PipeTransmissionMode.Byte,
         Encoding? encoding = null,
         ITextFormatter? formatter = null,

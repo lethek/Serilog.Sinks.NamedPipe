@@ -68,7 +68,7 @@ All sinks also provide the following optional parameters:
 
 | Name                     | Default               | Description |
 | ------------------------ | --------------------- | ----------- |
-| pipeDirection            | PipeDirection.InOut   | The direction of the pipe from the sink's perspective. |
+| pipeDirection            | PipeDirection.Out     | The direction of the pipe from the sink's perspective. |
 | encoding                 | UTF-8 without BOM     | Character encoding used to write to the named pipe. |
 | formatter                | CompactJsonFormatter  | A formatter, such as JsonFormatter, to convert the log events into text for the named pipe. |
 | restrictedToMinimumLevel | LogEventLevel.Verbose | The minimum level for events passed through the sink. Ignored when levelSwitch is specified. |

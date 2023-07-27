@@ -53,7 +53,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
 
 
-    public static PipeStreamFactory NamedPipeClientConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
+    public static PipeStreamFactory NamedPipeClientConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.Out)
     {
         if (String.IsNullOrWhiteSpace(pipeName)) {
             throw new ArgumentNullException(nameof(pipeName));
@@ -66,7 +66,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    public static PipeStreamFactory NamedPipeServerConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.InOut, PipeTransmissionMode transmissionMode = PipeTransmissionMode.Byte)
+    public static PipeStreamFactory NamedPipeServerConnectionFactory(string pipeName, PipeDirection direction = PipeDirection.Out, PipeTransmissionMode transmissionMode = PipeTransmissionMode.Byte)
     {
         if (String.IsNullOrWhiteSpace(pipeName)) {
             throw new ArgumentNullException(nameof(pipeName));
