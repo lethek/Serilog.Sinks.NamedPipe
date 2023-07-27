@@ -8,8 +8,8 @@
     <Authors>Michael Monsour</Authors>
     <Copyright>Copyright © Michael Monsour 2023</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Description></Description>
-    <PackageTags></PackageTags>
+    <Description>Serilog sink that writes log events to a named pipe.</Description>
+    <PackageTags>serilog sink logging named-pipe namedpipe named pipe</PackageTags>
     <PackageProjectUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
