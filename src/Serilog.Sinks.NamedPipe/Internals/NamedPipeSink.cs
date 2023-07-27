@@ -60,8 +60,17 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
         }
         return async cancellationToken => {
             var pipe = new NamedPipeClientStream(".", pipeName, direction, PipeOptions.Asynchronous);
-            await pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
-            return pipe;
+            try {
+                await pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return pipe;
+            } catch (Exception) {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+                await pipe.DisposeAsync().ConfigureAwait(false);
+#else
+                pipe.Dispose();
+#endif
+                throw;
+            }
         };
     }
 
@@ -73,8 +82,17 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
         }
         return async cancellationToken => {
             var pipe = new NamedPipeServerStream(pipeName, direction, 1, transmissionMode, PipeOptions.Asynchronous);
-            await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-            return pipe;
+            try {
+                await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+                return pipe;
+            } catch (Exception) {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+                await pipe.DisposeAsync().ConfigureAwait(false);
+#else
+                pipe.Dispose();
+#endif
+                throw;
+            }
         };
     }
 
@@ -94,7 +112,12 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
         try {
             while (!SinkCancellation.IsCancellationRequested) {
                 try {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+                    var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
+                    await using var pipeDisposable = pipe.ConfigureAwait(false);
+#else
                     using var pipe = await PipeFactory(SinkCancellation.Token).ConfigureAwait(false);
+#endif
                     try {
                         OnPipeConnected?.Invoke(this, pipe);
 
@@ -103,7 +126,12 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                         //It's desirable to write a LogEvent in a single write when the underlying named-pipe is operating in the
                         //PipeTransmissionMode.Message mode. If we don't use a single write per LogEvent, the reader at the other
                         //end of the named-pipe may have difficulty determining where one LogEvent ends and another begins.
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+                        var writer = new CoalescingStreamWriter(pipe, Encoding, leaveOpen: true);
+                        await using var writerDisposable = writer.ConfigureAwait(false);
+#else
                         using var writer = new CoalescingStreamWriter(pipe, Encoding, leaveOpen: true);
+#endif
 
                         while (pipe.IsConnected && await LogChannel.Reader.WaitToReadAsync(SinkCancellation.Token).ConfigureAwait(false)) {
                             if (LogChannel.Reader.TryPeek(out var logEvent)) {

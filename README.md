@@ -48,13 +48,24 @@ This sink allows you complete control over the creation of the named pipe stream
 
 The factory is called each time a new connection is required and must also not return until it has a connected stream.
 
-Do not allow the stream to be disposed of by the factory, as the sink will dispose of it when it is finished with it.
+The factory should only dispose of the stream if an exception is thrown while connecting. Under all other conditions,
+the sink will dispose of the stream when it is finished with it.
 
 ```csharp
 PipeStreamFactory factory = async cancellationToken => {
+    //This example uses a NamedPipeServerStream in Message transmission mode, but you can use any kind of PipeStream.
     var pipe = new NamedPipeServerStream("pipeName", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-    await pipe.WaitForConnectionAsync(cancellationToken);
-    return pipe;
+    
+    try {
+        //Wait for a client to connect.
+        await pipe.WaitForConnectionAsync(cancellationToken);
+        return pipe;
+
+    } catch (Exception) {
+        //Dispose of the stream if it errors while connecting, then propogate the exception out so the sink can handle it.
+        pipe.Dispose();
+        throw;
+    }
 };
 
 Log.Logger = new LoggerConfiguration()

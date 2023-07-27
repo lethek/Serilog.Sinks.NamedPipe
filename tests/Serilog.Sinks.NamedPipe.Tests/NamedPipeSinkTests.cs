@@ -253,8 +253,13 @@ public class NamedPipeSinkTests
         PipeStreamFactory pipeFactory = async cancellationToken => {
             //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
             var client = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-            await client.WaitForConnectionAsync(cancellationToken);
-            return client;
+            try {
+                await client.WaitForConnectionAsync(cancellationToken);
+                return client;
+            } catch (Exception) {
+                client.Dispose();
+                throw;
+            }
         };
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
