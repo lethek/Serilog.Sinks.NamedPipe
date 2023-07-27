@@ -44,12 +44,11 @@ internal sealed class CoalescingStreamWriter : TextWriter
             _innerStream.Write(bytes, 0, bytes.Length);
 #endif
             _innerStream.Flush();
-
             _buffer.Clear();
         }
     }
 
-
+    
     public override Task WriteAsync(char value)
     {
         _buffer.Append(value);
@@ -64,18 +63,32 @@ internal sealed class CoalescingStreamWriter : TextWriter
     }
 
 
-    public override async Task FlushAsync()
-    {
-        if (_buffer.Length > 0) {
-            var bytes = Encoding.GetBytes(_buffer.ToString());
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
-            await _innerStream.WriteAsync(bytes.AsMemory(), default);
+    public override Task FlushAsync()
+        => FlushCoreAsync(default);
+
+
+#if NET8_0_OR_GREATER
+    public override Task FlushAsync(CancellationToken cancellationToken)
 #else
-            await _innerStream.WriteAsync(bytes, 0, bytes.Length, default);
+    public Task FlushAsync(CancellationToken cancellationToken)
 #endif
-            await _innerStream.FlushAsync(default);
-            _buffer.Clear();
+        => FlushCoreAsync(cancellationToken);
+
+
+    public async Task FlushCoreAsync(CancellationToken cancellationToken)
+    {
+        if (_buffer.Length == 0) {
+            return;
         }
+
+        var bytes = Encoding.GetBytes(_buffer.ToString());
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+        await _innerStream.WriteAsync(bytes.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
+        await _innerStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+#endif
+        await _innerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        _buffer.Clear();
     }
 
 

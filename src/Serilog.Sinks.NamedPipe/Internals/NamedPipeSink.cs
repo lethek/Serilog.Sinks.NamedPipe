@@ -140,7 +140,7 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                                     Formatter.Format(logEvent, writer);
 
                                     //Flush the CoalescingTextWriter to ensure the entire logEvent is written to the pipe using a single Write
-                                    await writer.FlushAsync().ConfigureAwait(false);
+                                    await writer.FlushAsync(SinkCancellation.Token).ConfigureAwait(false);
 
                                     //Now logEvent has been successfully written to the pipe, we can remove it from the queue
                                     LogChannel.Reader.TryRead(out _);
