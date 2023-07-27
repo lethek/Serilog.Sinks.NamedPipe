@@ -112,6 +112,9 @@ public static class NamedPipeLoggerConfigurationExtensions
         if (sinkConfiguration == null) {
             throw new ArgumentNullException(nameof(sinkConfiguration));
         }
+        if (pipeStreamFactory == null) {
+            throw new ArgumentNullException(nameof(pipeStreamFactory));
+        }
         return sinkConfiguration.Sink(new NamedPipeSink(pipeStreamFactory, encoding, formatter, bufferSize), restrictedToMinimumLevel, levelSwitch);
     }
 
