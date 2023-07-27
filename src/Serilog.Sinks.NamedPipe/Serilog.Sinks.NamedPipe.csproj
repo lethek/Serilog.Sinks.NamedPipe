@@ -5,17 +5,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <IsPackable>true</IsPackable>
+
     <Authors>Michael Monsour</Authors>
     <Copyright>Copyright © Michael Monsour 2023</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Serilog sink that writes log events to a named pipe.</Description>
-    <PackageTags>serilog sink logging named-pipe namedpipe named pipe</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>serilog;sink;logging;named-pipe;namedpipe;named;pipe</PackageTags>
     <PackageProjectUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>images\icon.png</PackageIcon>
+    <PackageIconUrl>https://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <IsPackable>true</IsPackable>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,24 +27,21 @@
 
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
-    <PackageReference Update="NuGetizer" Version="1.0.5">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Serilog" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'" >
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Threading.Channels" Version="6.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'" >
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <PackageReference Include="System.Threading.Channels" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-     <None Include="..\..\README.md" Pack="true" Visible="false" PackagePath="" /> 
+     <None Include="..\..\README.md" Pack="true" Visible="false" PackagePath="" />
+     <None Include="..\..\assets\serilog-sink-nuget.png" Pack="true" Visible="false" PackagePath="images\icon.png" />
    </ItemGroup>
 
 </Project>
