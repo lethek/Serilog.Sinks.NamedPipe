@@ -64,7 +64,7 @@ internal sealed class CoalescingStreamWriter : TextWriter
 
 
     public override Task FlushAsync()
-        => FlushCoreAsync(default);
+        => FlushAsyncCore(default);
 
 
 #if NET8_0_OR_GREATER
@@ -72,10 +72,10 @@ internal sealed class CoalescingStreamWriter : TextWriter
 #else
     public Task FlushAsync(CancellationToken cancellationToken)
 #endif
-        => FlushCoreAsync(cancellationToken);
+        => FlushAsyncCore(cancellationToken);
 
 
-    public async Task FlushCoreAsync(CancellationToken cancellationToken)
+    public async Task FlushAsyncCore(CancellationToken cancellationToken)
     {
         if (_buffer.Length == 0) {
             return;

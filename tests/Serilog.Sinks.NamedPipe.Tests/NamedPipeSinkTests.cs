@@ -34,7 +34,7 @@ public class NamedPipeSinkTests
         //Setup the sink and then dispose of it
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
-        using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
+        await using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
             sink.OnMessagePumpStopped += _ => { stoppedSemaphore.Release(); };
 
             worker = sink.Worker;
@@ -65,7 +65,7 @@ public class NamedPipeSinkTests
         //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
         await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
@@ -85,7 +85,7 @@ public class NamedPipeSinkTests
         //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
         await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
@@ -107,7 +107,7 @@ public class NamedPipeSinkTests
         //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
@@ -151,7 +151,7 @@ public class NamedPipeSinkTests
         //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
@@ -193,7 +193,7 @@ public class NamedPipeSinkTests
         //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
         for (var i = 0; i < 20; i++) {
@@ -226,7 +226,7 @@ public class NamedPipeSinkTests
         //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
         for (var i = 0; i < 20; i++) {
@@ -274,7 +274,7 @@ public class NamedPipeSinkTests
                 throw;
             }
         };
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Create a client to connect to the sink's named-pipe server
         await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
@@ -310,7 +310,7 @@ public class NamedPipeSinkTests
             await client.ConnectAsync(cancellationToken);
             return client;
         };
-        using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
+        await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Create a server for the sink's named-pipe client to connect to
         await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);

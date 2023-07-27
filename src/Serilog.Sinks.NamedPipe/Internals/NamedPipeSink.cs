@@ -14,6 +14,9 @@ using Serilog.Formatting.Compact;
 namespace Serilog.Sinks.NamedPipe.Internals;
 
 internal class NamedPipeSink : ILogEventSink, IDisposable
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+    , IAsyncDisposable
+#endif
 {
     internal NamedPipeSink(PipeStreamFactory pipeFactory, Encoding? encoding, ITextFormatter? formatter, int capacity)
     {
@@ -185,6 +188,13 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+
     protected virtual void Dispose(bool disposing)
     {
         if (_isDisposed) {
@@ -193,13 +203,37 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
 
         if (disposing) {
             try {
-                SinkCancellation.Cancel();
+                if (!SinkCancellation.IsCancellationRequested) {
+                    SinkCancellation.Cancel();
+                }
                 SinkCancellation.Dispose();
                 LogChannel.Writer.Complete();
             } catch {
                 //Ignored
             }
         }
+
+        _isDisposed = true;
+    }
+
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        if (_isDisposed) {
+            return;
+        }
+
+        if (!SinkCancellation.IsCancellationRequested) {
+            SinkCancellation.Cancel();
+        }
+        try {
+            await Worker.ConfigureAwait(false);
+        } catch {
+            //Ignored
+        }
+        SinkCancellation.Dispose();
+        LogChannel.Writer.Complete();
+
         _isDisposed = true;
     }
 
