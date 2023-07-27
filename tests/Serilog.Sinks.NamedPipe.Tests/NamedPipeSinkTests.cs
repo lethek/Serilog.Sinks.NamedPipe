@@ -31,6 +31,7 @@ public class NamedPipeSinkTests
 
         using var stoppedSemaphore = new SemaphoreSlim(0, 1);
 
+        //Setup the sink and then dispose of it
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
@@ -39,11 +40,14 @@ public class NamedPipeSinkTests
             worker = sink.Worker;
             reader = sink.LogChannel.Reader;
 
+            #if !NET6_0_OR_GREATER
             //NOTE: Shouldn't need the following NamedPipeClientStream code below, but it's the only way to reliably run
             //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) which can cause
-            //the server to hang forever on Unix systems. Microsoft fixed it in .NET 6.0.
+            //the server to hang forever on Unix systems. Microsoft fixed it in .NET 6.0, however we still need to support
+            //and test older versions of .NET.
             await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
             await client.ConnectAsync();
+            #endif
         }
 
         //Wait until the message pump has stopped
@@ -58,10 +62,12 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeServer_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
+        //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
+        //Setup the receiver
         await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
         await receiver.ConnectAsync();
         using var reader = new StreamReader(receiver);
@@ -76,10 +82,12 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeClient_WhenEmitting_ShouldWriteToNamedPipeCorrectly()
     {
+        //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
+        //Setup the receiver
         await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         await receiver.WaitForConnectionAsync();
         using var reader = new StreamReader(receiver);
@@ -96,6 +104,7 @@ public class NamedPipeSinkTests
     {
         using var pipeBrokenSemaphore = new SemaphoreSlim(0, 1);
 
+        //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
@@ -139,6 +148,7 @@ public class NamedPipeSinkTests
     {
         using var pipeBrokenSemaphore = new SemaphoreSlim(0, 1);
 
+        //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
@@ -180,6 +190,7 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeServer_WhenEmittingWhileDisconnected_ShouldQueueLogEventsUpToCapacity()
     {
+        //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
@@ -212,6 +223,7 @@ public class NamedPipeSinkTests
     [Fact]
     public async Task NamedPipeClient_WhenEmittingWhileDisconnected_ShouldQueueLogEventsUpToCapacity()
     {
+        //Setup the sink
         var pipeName = GeneratePipeName();
         var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
         using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
@@ -241,6 +253,7 @@ public class NamedPipeSinkTests
     }
 
 
+#pragma warning disable CA1416
     [SkippableFact]
     public async Task NamedPipeServerWithCustomFactory_WhenEmittingMessages_ShouldWriteToNamedPipeCorrectly()
     {
@@ -278,8 +291,10 @@ public class NamedPipeSinkTests
 
         Assert.Equal(expectedMessageText, renderedMessageText);
     }
+#pragma warning restore CA1416
 
 
+#pragma warning disable CA1416
     [SkippableFact]
     public async Task NamedPipeClientWithCustomFactory_WhenEmittingMessages_ShouldWriteToNamedPipeCorrectly()
     {
@@ -310,6 +325,7 @@ public class NamedPipeSinkTests
 
         Assert.Equal(expectedMessageText, renderedMessageText);
     }
+#pragma warning restore CA1416
 
 
     private static async Task<string> RenderNextLogEventAsync(TextReader reader)

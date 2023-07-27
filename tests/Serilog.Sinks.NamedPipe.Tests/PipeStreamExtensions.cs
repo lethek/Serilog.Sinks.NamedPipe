@@ -19,7 +19,7 @@ public static class PipeStreamExtensions
 
         try {
             do {
-                int bytesRead = await pipe.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+                var bytesRead = await pipe.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
                 if (bytesRead > 0) {
                     memoryStream.Write(buffer.AsSpan()[..bytesRead]);
                 }
@@ -48,7 +48,7 @@ public static class PipeStreamExtensions
 
         try {
             do {
-                int bytesRead = pipe.Read(buffer.AsSpan());
+                var bytesRead = pipe.Read(buffer.AsSpan());
                 if (bytesRead > 0) {
                     memoryStream.Write(buffer.AsSpan()[..bytesRead]);
                 }

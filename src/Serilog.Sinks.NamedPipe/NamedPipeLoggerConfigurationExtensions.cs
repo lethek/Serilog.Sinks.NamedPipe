@@ -14,6 +14,9 @@ using Serilog.Sinks.NamedPipe.Internals;
 // ReSharper disable once CheckNamespace
 namespace Serilog;
 
+/// <summary>
+/// Provides extensions methods for <see cref="LoggerSinkConfiguration"/> to add and configure a named pipe sink.
+/// </summary>
 public static class NamedPipeLoggerConfigurationExtensions
 {
     /// <summary>
@@ -88,7 +91,9 @@ public static class NamedPipeLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="pipeStreamFactory">A factory that will be called to create a <see cref="PipeStream"/> and open its
     /// connection. The factory must not return until the connection has opened and is ready for writing. It will be called
-    /// when a new pipe is needed, including whenever the pipe connection is broken and needs to be reconnected.</param>
+    /// when a new pipe is needed, including whenever the pipe connection is broken and needs to be reconnected. If an
+    /// exception is thrown while the factory is waiting for a connection, the factory should dispose of the <see cref="PipeStream"/>
+    /// it created. In all other cases the factory must not dispose of it as the sink will manage its lifetime.</param>
     /// <param name="encoding">Character encoding used to write to the named pipe. The default is UTF-8 without BOM.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for the
     /// named pipe. The default is <see cref="CompactJsonFormatter"/>.</param>
