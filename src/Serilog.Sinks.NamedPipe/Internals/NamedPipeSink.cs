@@ -168,9 +168,10 @@ internal class NamedPipeSink : ILogEventSink, IDisposable
                 }
             }
 
-        } catch (Exception ex) {
+        } catch (Exception ex) when (ex is not OperationCanceledException) {
             SelfLog.WriteLine($"Fatal error in message-pump (pump will terminate): {ex}");
             OnMessagePumpError?.Invoke(this, ex);
+
         } finally {
             OnMessagePumpStopped?.Invoke(this);
         }
