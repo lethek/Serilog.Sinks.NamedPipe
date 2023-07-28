@@ -14,4 +14,4 @@ namespace Serilog.Sinks.NamedPipe;
 /// <returns>An instance of a <see cref="PipeStream"/> implementation. E.g.
 /// <see cref="NamedPipeClientStream"/>, <see cref="NamedPipeServerStream"/>,
 /// <see cref="AnonymousPipeClientStream"/>, <see cref="AnonymousPipeServerStream"/>.</returns>
-public delegate Task<PipeStream> PipeStreamFactory(CancellationToken cancellationToken);
+public delegate ValueTask<PipeStream> PipeStreamFactory(CancellationToken cancellationToken);

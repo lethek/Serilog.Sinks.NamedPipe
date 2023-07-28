@@ -61,7 +61,7 @@ PipeStreamFactory factory = async cancellationToken => {
         await pipe.WaitForConnectionAsync(cancellationToken);
         return pipe;
 
-    } catch (Exception) {
+    } catch {
         //Dispose of the stream if it errors while connecting, then propogate the exception out so the sink can handle it.
         pipe.Dispose();
         throw;

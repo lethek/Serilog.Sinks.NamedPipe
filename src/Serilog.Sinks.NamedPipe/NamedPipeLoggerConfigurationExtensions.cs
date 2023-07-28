@@ -8,7 +8,6 @@ using Serilog.Formatting;
 using Serilog.Formatting.Compact;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.NamedPipe;
-using Serilog.Sinks.NamedPipe.Internals;
 
 
 // ReSharper disable once CheckNamespace
@@ -46,7 +45,7 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName, pipeDirection);
+        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName, pipeDirection);
         return NamedPipe(sinkConfiguration, pipeFactory, encoding, formatter, restrictedToMinimumLevel, levelSwitch, bufferSize);
     }
 
@@ -80,7 +79,7 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName, pipeDirection, pipeTransmissionMode);
+        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName, pipeDirection, pipeTransmissionMode);
         return NamedPipe(sinkConfiguration, pipeFactory, encoding, formatter, restrictedToMinimumLevel, levelSwitch, bufferSize);
     }
 

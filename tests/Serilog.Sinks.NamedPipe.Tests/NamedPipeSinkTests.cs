@@ -7,7 +7,6 @@ using Hypothesist;
 using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
-using Serilog.Sinks.NamedPipe.Internals;
 
 using Xunit.Abstractions;
 
@@ -33,7 +32,7 @@ public class NamedPipeSinkTests
 
         //Setup the sink and then dispose of it
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
         await using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
             sink.OnMessagePumpStopped += _ => { stoppedSemaphore.Release(); };
 
@@ -64,7 +63,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
@@ -84,7 +83,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
@@ -106,7 +105,7 @@ public class NamedPipeSinkTests
 
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
@@ -150,7 +149,7 @@ public class NamedPipeSinkTests
 
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
@@ -192,7 +191,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeServerConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
@@ -225,7 +224,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.NamedPipeClientConnectionFactory(pipeName);
+        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
