@@ -65,28 +65,24 @@ Log.Logger = new LoggerConfiguration()
 Or more verbosely, foregoing the convenience of `NamedPipeStream.CreatePipeStreamFactory(getStream, connect)`:
 
 ```csharp
-PipeStreamFactory factory = async cancellationToken => {
+async ValueTask<PipeStream> MyPipeStreamFactory(CancellationToken cancellationToken) {
     //This example uses a NamedPipeServerStream in Message transmission mode, but you can use any kind of PipeStream.
     var pipe = new NamedPipeServerStream("pipeName", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-    
     try {
         //Wait for a client to connect.
         await pipe.WaitForConnectionAsync(cancellationToken);
         return pipe;
-
     } catch {
         //Dispose of the stream if it errors while connecting, then propogate the exception out so the sink can handle it.
         pipe.Dispose();
         throw;
     }
-};
+}
 
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.NamedPipe(factory)
+    .WriteTo.NamedPipe(MyPipeStreamFactory)
     .CreateLogger();
 ```
-
-
 
 ## Sink Options
 
