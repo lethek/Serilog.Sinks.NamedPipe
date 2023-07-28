@@ -83,15 +83,40 @@ public class NamedPipeSink : ILogEventSink, IDisposable
     /// </list>
     /// The resulting factory will automatically take care of disposing the <see cref="PipeStream"/> instance internally if the connection fails.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="getStream"></param>
-    /// <param name="connect"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">The type of the stream returned by the <paramref name="getStream"/> delegate. It must implement the <see cref="PipeStream"/> class.</typeparam>
+    /// <param name="getStream">A delegate function which returns a new instance of a <see cref="PipeStream"/> implementation.</param>
+    /// <param name="connect">An async delegate which performs the task of waiting for the created <see cref="PipeStream"/> to connect. A <see cref="CancellationToken"/> is
+    /// passed to the delegate so that the wait may be cancelled. If cancellation is requested, the delegate MUST allow the <see cref="OperationCanceledException"/>
+    /// to be thrown and remain unhandled by the delegate.</param>
+    /// <returns>A factory method which, when called, creates and connects the named-pipe.</returns>
     public static PipeStreamFactory CreatePipeStreamFactory<T>(Func<T> getStream, Func<T, CancellationToken, Task> connect)
         where T : PipeStream
         => cancellationToken
             => TryOrDispose<T, PipeStream>(
                 getStream(),
+                x => connect(x, cancellationToken)
+            );
+
+    
+    /// <summary>
+    /// Allows easily creating a custom <see cref="PipeStreamFactory"/> for configuring the sink. It consists of two separate steps:
+    /// <list type="number">
+    /// <item><description>Create a <see cref="PipeStream"/> instance (e.g. <see cref="NamedPipeClientStream"/>, <see cref="NamedPipeServerStream"/>, <see cref="AnonymousPipeClientStream"/>, <see cref="AnonymousPipeServerStream"/>).</description></item>
+    /// <item><description>Connect the <see cref="PipeStream"/> instance.</description></item>
+    /// </list>
+    /// The resulting factory will automatically take care of disposing the <see cref="PipeStream"/> instance internally if the connection fails.
+    /// </summary>
+    /// <typeparam name="T">The type of the stream returned by the <paramref name="getStream"/> delegate. It must implement the <see cref="PipeStream"/> class.</typeparam>
+    /// <param name="getStream">An async delegate function which returns a new instance of a <see cref="PipeStream"/> implementation.</param>
+    /// <param name="connect">An async delegate which performs the task of waiting for the created <see cref="PipeStream"/> to connect. A <see cref="CancellationToken"/> is
+    /// passed to the delegate so that the wait may be cancelled. If cancellation is requested, the delegate MUST allow the <see cref="OperationCanceledException"/>
+    /// to be thrown and remain unhandled by the delegate.</param>
+    /// <returns>A factory method which, when called, creates and connects the named-pipe.</returns>
+    public static PipeStreamFactory CreatePipeStreamFactory<T>(Func<ValueTask<T>> getStream, Func<T, CancellationToken, Task> connect)
+        where T : PipeStream
+        => async cancellationToken
+            => await TryOrDispose<T, PipeStream>(
+                await getStream(),
                 x => connect(x, cancellationToken)
             );
 

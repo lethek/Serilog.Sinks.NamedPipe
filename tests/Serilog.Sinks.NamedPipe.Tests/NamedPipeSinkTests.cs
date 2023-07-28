@@ -262,17 +262,11 @@ public class NamedPipeSinkTests
         var pipeName = GeneratePipeName();
 
         //Custom factory which creates a named-pipe server stream and waits for a client to connect
-        PipeStreamFactory pipeFactory = async cancellationToken => {
+        var pipeFactory = NamedPipeSink.CreatePipeStreamFactory(
             //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
-            var client = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-            try {
-                await client.WaitForConnectionAsync(cancellationToken);
-                return client;
-            } catch (Exception) {
-                client.Dispose();
-                throw;
-            }
-        };
+            () => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous),
+            (server, cancellationToken) => server.WaitForConnectionAsync(cancellationToken)
+        );
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Create a client to connect to the sink's named-pipe server
@@ -303,12 +297,11 @@ public class NamedPipeSinkTests
         var pipeName = GeneratePipeName();
 
         //Custom factory which creates a named-pipe server stream and waits for a client to connect
-        PipeStreamFactory pipeFactory = async cancellationToken => {
+        var pipeFactory = NamedPipeSink.CreatePipeStreamFactory(
             //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
-            var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            await client.ConnectAsync(cancellationToken);
-            return client;
-        };
+            () => new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous),
+            (client, cancellationToken) => client.ConnectAsync(cancellationToken)
+        );
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Create a server for the sink's named-pipe client to connect to
