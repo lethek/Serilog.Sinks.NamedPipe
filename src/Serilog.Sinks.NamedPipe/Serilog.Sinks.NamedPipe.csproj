@@ -21,7 +21,6 @@
     <PackageIconUrl>https://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <RootNamespace>Serilog</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,12 +42,8 @@
   </ItemGroup>
 
   <ItemGroup>
-     <None Include="..\..\README.md" Pack="true" Visible="false" PackagePath="" />
-     <None Include="..\..\assets\serilog-sink-nuget.png" Pack="true" Visible="false" PackagePath="images\icon.png" />
-   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Internals\" />
+    <None Include="..\..\README.md" Pack="true" Visible="false" PackagePath="" />
+    <None Include="..\..\assets\serilog-sink-nuget.png" Pack="true" Visible="false" PackagePath="images\icon.png" />
   </ItemGroup>
 
 </Project>
