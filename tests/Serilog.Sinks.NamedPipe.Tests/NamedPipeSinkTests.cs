@@ -7,6 +7,7 @@ using Hypothesist;
 using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
+using Serilog.Sinks.NamedPipe.Reader.Extensions;
 
 using Xunit.Abstractions;
 
