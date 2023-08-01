@@ -1,8 +1,7 @@
-﻿using System.IO.Pipes;
+﻿// ReSharper disable EventNeverSubscribedTo.Global
+using System.IO.Pipes;
 using System.Text;
 using System.Threading.Channels;
-
-using JetBrains.Annotations;
 
 using Serilog.Core;
 using Serilog.Debugging;
@@ -48,31 +47,31 @@ public class NamedPipeSink : ILogEventSink, IDisposable
 
 
     /// <summary>Occurs when the message pump is stopped and no more log events will be written to the named pipe.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler? OnMessagePumpStopped;
+    public event NamedPipeSinkEventHandler? OnMessagePumpStopped;
 
     /// <summary>Occurs when an error is thrown while running the message pump.</summary>
-    [UsedImplicitly] public event NamedPipeSinkErrorEventHandler? OnMessagePumpError;
+    public event NamedPipeSinkErrorEventHandler? OnMessagePumpError;
 
     /// <summary>Occurs when the <see cref="PipeStream"/> is connected.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeConnected;
+    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeConnected;
 
     /// <summary>Occurs when the <see cref="PipeStream"/> is unexpectedly broken, e.g. because the other end of the pipe was closed.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeBroken;
+    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeBroken;
 
     /// <summary>Occurs when the <see cref="PipeStream"/> is disconnected for any reason, e.g. because the other end of the pipe was closed, or because the sink is being disposed.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler<PipeStream>? OnPipeDisconnected;
+    public event NamedPipeSinkEventHandler<PipeStream>? OnPipeDisconnected;
 
     /// <summary>Occurs when a log event is successfully queued for writing to the named pipe.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler<LogEvent>? OnQueueSuccess;
+    public event NamedPipeSinkEventHandler<LogEvent>? OnQueueSuccess;
 
     /// <summary>Occurs when the queueing of a log event fails, e.g. because the internal buffer is full.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler<LogEvent>? OnQueueFailure;
+    public event NamedPipeSinkEventHandler<LogEvent>? OnQueueFailure;
 
     /// <summary>Occurs when a write to the named pipe succeeds.</summary>
-    [UsedImplicitly] public event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
+    public event NamedPipeSinkEventHandler<LogEvent>? OnWriteSuccess;
 
     /// <summary>Occurs when a write to the named pipe fails.</summary>
-    [UsedImplicitly] public event NamedPipeSinkErrorEventHandler<LogEvent>? OnWriteFailure;
+    public event NamedPipeSinkErrorEventHandler<LogEvent>? OnWriteFailure;
 
 
     ///<inheritdoc />
