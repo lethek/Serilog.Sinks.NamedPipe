@@ -218,35 +218,6 @@ public class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    /// <summary>
-    /// Try the specified asyncAction, if it fails, dispose the <paramref name="disposable"/> and rethrow the exception.
-    /// </summary>
-    /// <typeparam name="TIn">The input object Type, it must be the same type as <typeparamref name="TOut"/> or a sub-class. It must also implement <see cref="IDisposable"/>.</typeparam>
-    /// <typeparam name="TOut">The returned object Type, it must be the same type as <typeparamref name="TIn"/> or a base-class/interface.</typeparam>
-    /// <param name="disposable">An input object to pass as a parameter to <paramref name="asyncAction"/>. This object will be disposed if <paramref name="asyncAction"/> throws any <see cref="Exception"/>.</param>
-    /// <param name="asyncAction">An async action to try, using the provided <paramref name="disposable"/> object.</param>
-    /// <returns>The input <paramref name="disposable"/> object cast to the specified <typeparamref name="TOut"/> type.</returns>
-    private static async ValueTask<TOut> TryOrDispose<TIn, TOut>(TIn disposable, Func<TIn, Task> asyncAction)
-        where TIn : TOut, IDisposable
-    {
-        try {
-            await asyncAction(disposable).ConfigureAwait(false);
-            return disposable;
-        } catch {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
-            if (disposable is IAsyncDisposable asyncDisposable) {
-                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-            } else {
-                disposable.Dispose();
-            }
-#else
-            disposable.Dispose();
-#endif
-            throw;
-        }
-    }
-
-
     internal protected readonly CancellationTokenSource SinkCancellation = new();
     internal protected readonly ITextFormatter Formatter;
     internal protected readonly Channel<LogEvent> LogChannel;
