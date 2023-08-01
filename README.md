@@ -52,7 +52,7 @@ The factory should only dispose of the stream if an exception is thrown while co
 the sink will dispose of the stream when it is finished with it.
 
 ```csharp
-var factory = NamedPipeSink.CreatePipeStreamFactory(
+var factory = NamedPipeFactories.CreateFactory(
     getStream: () => new NamedPipeServerStream("pipeName", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous),
     connect: (pipe, cancellationToken) => pipe.WaitForConnectionAsync(cancellationToken)
 );
@@ -62,7 +62,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 ```
 
-Or more verbosely, foregoing the convenience of `NamedPipeStream.CreatePipeStreamFactory(getStream, connect)`:
+Or more verbosely, foregoing the convenience of `NamedPipeFactories.CreateFactory(getStream, connect)`:
 
 ```csharp
 async ValueTask<PipeStream> MyPipeStreamFactory(CancellationToken cancellationToken) {
