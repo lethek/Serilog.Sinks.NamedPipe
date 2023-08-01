@@ -124,7 +124,9 @@ public class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously.</summary>
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously.
+    /// </summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     protected virtual async ValueTask DisposeAsyncCore()
     {
@@ -218,12 +220,12 @@ public class NamedPipeSink : ILogEventSink, IDisposable
     }
 
 
-    internal protected readonly CancellationTokenSource SinkCancellation = new();
-    internal protected readonly ITextFormatter Formatter;
-    internal protected readonly Channel<LogEvent> LogChannel;
-    internal protected readonly PipeStreamFactory PipeFactory;
-    internal protected readonly Encoding Encoding;
-    internal protected readonly Task Worker;
+    internal readonly CancellationTokenSource SinkCancellation = new();
+    internal readonly ITextFormatter Formatter;
+    internal readonly Channel<LogEvent> LogChannel;
+    internal readonly PipeStreamFactory PipeFactory;
+    internal readonly Encoding Encoding;
+    internal readonly Task Worker;
 
 
     private bool _isDisposed;

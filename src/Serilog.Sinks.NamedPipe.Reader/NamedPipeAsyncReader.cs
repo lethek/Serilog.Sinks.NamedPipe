@@ -9,41 +9,80 @@ using Serilog.Sinks.NamedPipe.Reader.Extensions;
 
 namespace Serilog.Sinks.NamedPipe.Reader;
 
+/// <summary>
+/// Provides functionality for reading log events asynchronously from a named pipe.
+/// </summary>
 public class NamedPipeAsyncReader
 {
-    public static IAsyncEnumerable<LogEvent> ReadAllAsync<T>(PipeStreamFactory factory, Encoding? encoding = null, CancellationToken cancellationToken = default)
-        where T : LogEvent
-        => new NamedPipeAsyncReader(factory, encoding).ReadAllAsync<T>(cancellationToken);
+    /// <summary>
+    /// Enumerates all log events asynchronously from a named pipe. When deserializing, this method assumes that each log event was formatted using the
+    /// CompactJsonFormatter (which is the default formatter used by NamedPipeSink).
+    /// </summary>
+    /// <param name="factory">A factory method for creating a <see cref="PipeStream"/> and opening its connection."></param>
+    /// <param name="encoding">Character encoding to use when reading from a named pipe. The default is UTF-8 without BOM.</param>
+    /// <param name="cancellationToken">The cancellation token that can be used to cancel the operation.</param>
+    /// <returns>An asynchronous enumerable that yields Serilog <see cref="LogEvent"/> instances.</returns>
+    public static IAsyncEnumerable<LogEvent> ReadAllLogEventsAsync(PipeStreamFactory factory, Encoding? encoding = null, CancellationToken cancellationToken = default)
+        => new NamedPipeAsyncReader(factory, encoding).ReadAllLogEventsAsync(cancellationToken);
 
 
-    public static IAsyncEnumerable<string> ReadAllAsync(PipeStreamFactory factory, Encoding? encoding = null, CancellationToken cancellationToken = default)
-        => new NamedPipeAsyncReader(factory, encoding).ReadAllAsync(cancellationToken);
+    /// <summary>
+    /// <para>Enumerates all lines/messages asynchronously from a named pipe.</para>
+    /// </summary>
+    /// <param name="factory">A factory method for creating a <see cref="PipeStream"/> and opening its connection."></param>
+    /// <param name="encoding">Character encoding to use when reading from a named pipe. The default is UTF-8 without BOM.</param>
+    /// <param name="cancellationToken">The cancellation token that can be used to cancel the operation.</param>
+    /// <returns>An asynchronous enumerable that yields lines/messages read from the named pipe.</returns>
+    public static IAsyncEnumerable<string> ReadAllLinesAsync(PipeStreamFactory factory, Encoding? encoding = null, CancellationToken cancellationToken = default)
+        => new NamedPipeAsyncReader(factory, encoding).ReadAllLinesAsync(cancellationToken);
 
 
-    public NamedPipeAsyncReader(PipeStreamFactory factory, Encoding? encoding = null)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NamedPipeAsyncReader"/> class.
+    /// </summary>
+    /// <param name="pipeStreamFactory">A factory method for creating a <see cref="PipeStream"/> and opening its connection.</param>
+    /// <param name="encoding">Character encoding to use when reading from a named pipe. The default is UTF-8 without BOM.</param>
+    public NamedPipeAsyncReader(PipeStreamFactory pipeStreamFactory, Encoding? encoding = null)
     {
-        _factory = factory;
+        _pipeStreamFactory = pipeStreamFactory ?? throw new ArgumentNullException(nameof(pipeStreamFactory));
         _encoding = encoding ?? DefaultEncoding;
     }
 
 
-    public async IAsyncEnumerable<LogEvent> ReadAllAsync<T>([EnumeratorCancellation] CancellationToken cancellationToken = default)
-        where T : LogEvent
+    /// <summary>
+    /// Enumerates all log events asynchronously from a named pipe. When deserializing, this method assumes that each log event was formatted using the
+    /// CompactJsonFormatter (which is the default formatter used by NamedPipeSink).
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token that can be used to cancel the operation.</param>
+    /// <returns>An asynchronous enumerable that yields Serilog <see cref="LogEvent" /> instances deserialized from a named pipe.</returns>
+    public async IAsyncEnumerable<LogEvent> ReadAllLogEventsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await foreach (var msg in ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
+        await foreach (var msg in ReadAllLinesAsync(cancellationToken).ConfigureAwait(false)) {
             yield return LogEventReader.ReadFromString(msg);
         }
     }
 
 
-    public async IAsyncEnumerable<string> ReadAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    /// <summary>
+    /// <para>Enumerates all lines/messages asynchronously from a named pipe.</para>
+    /// <para>Under default conditions, each string returned will correspond to a single raw JSON formatted log event.</para>
+    /// <para>If the pipe is using <see cref="E:PipeTransmissionMode.Message"/> transmission mode this is guaranteed, however
+    /// that mode is only available on Windows systems.</para>
+    /// <para>If the pipe is using the default <see cref="E:PipeTransmissionMode.Byte"/> transmission mode AND the sink was
+    /// configured with a custom formatter which doesn't escape newline characters, then strings returned by this method may not
+    /// always correspond to a single log event. In this case, the caller is responsible for parsing the returned strings into
+    /// whatever format is required.</para>
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token that can be used to cancel the read operation.</param>
+    /// <returns>An asynchronous enumerable that yields lines/messages read from a named pipe.</returns>
+    public async IAsyncEnumerable<string> ReadAllLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         while (!cancellationToken.IsCancellationRequested) {
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
-            var pipe = await _factory(cancellationToken).ConfigureAwait(false);
+            var pipe = await _pipeStreamFactory(cancellationToken).ConfigureAwait(false);
             await using var pipeDisposable = pipe.ConfigureAwait(false);
 #else
-            using var pipe = await _factory(cancellationToken).ConfigureAwait(false);
+            using var pipe = await _pipeStreamFactory(cancellationToken).ConfigureAwait(false);
 #endif
 
             if (pipe.ReadMode == PipeTransmissionMode.Message) {
@@ -72,7 +111,7 @@ public class NamedPipeAsyncReader
     }
 
 
-    private readonly PipeStreamFactory _factory;
+    private readonly PipeStreamFactory _pipeStreamFactory;
     private readonly Encoding _encoding;
 
 

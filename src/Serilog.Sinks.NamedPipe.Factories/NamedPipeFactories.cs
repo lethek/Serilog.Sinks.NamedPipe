@@ -2,6 +2,10 @@
 
 namespace Serilog.Sinks.NamedPipe;
 
+
+/// <summary>
+/// Provides static methods for creating named-pipe stream factories (<see cref="PipeStreamFactory"/>).
+/// </summary>
 public static class NamedPipeFactories
 {
     /// <summary>
