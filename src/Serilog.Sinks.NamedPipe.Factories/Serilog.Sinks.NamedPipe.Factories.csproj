@@ -25,4 +25,8 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\assets\serilog-red-logo.png" Pack="true" Visible="false" PackagePath="images\icon.png" />
+  </ItemGroup>
+
 </Project>
