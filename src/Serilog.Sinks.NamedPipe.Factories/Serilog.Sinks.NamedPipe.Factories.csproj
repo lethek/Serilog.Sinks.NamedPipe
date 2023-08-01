@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Serilog.Sinks.NamedPipe</RootNamespace>
+
+    <Authors>Michael Monsour</Authors>
+    <Copyright>Copyright © Michael Monsour 2023</Copyright>
+    <Description>Provides factories for use in Serilog.Sinks.NamedPipe and Serilog.Sinks.NamedPipe.Reader packages.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>serilog;sink;logging;named-pipe;namedpipe;named;pipe</PackageTags>
+    <PackageProjectUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</PackageProjectUrl>
+    <PackageIcon>images\icon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+  </ItemGroup>
+
+</Project>

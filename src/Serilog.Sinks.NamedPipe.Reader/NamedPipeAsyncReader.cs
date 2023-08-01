@@ -11,6 +11,14 @@ namespace Serilog.Sinks.NamedPipe.Reader;
 
 public class NamedPipeAsyncReader
 {
+    public static IAsyncEnumerable<LogEvent> ReadAllAsync<T>(PipeStreamFactory factory, Encoding? encoding = null, CancellationToken cancellationToken = default)
+        where T : LogEvent
+        => new NamedPipeAsyncReader(factory, encoding).ReadAllAsync<T>(cancellationToken);
+
+
+    public static IAsyncEnumerable<string> ReadAllAsync(PipeStreamFactory factory, Encoding? encoding = null, CancellationToken cancellationToken = default)
+        => new NamedPipeAsyncReader(factory, encoding).ReadAllAsync(cancellationToken);
+
 
     public NamedPipeAsyncReader(PipeStreamFactory factory, Encoding? encoding = null)
     {

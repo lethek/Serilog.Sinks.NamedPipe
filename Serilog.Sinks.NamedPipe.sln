@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3C59D2B9-0D8
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.NamedPipe", "src\Serilog.Sinks.NamedPipe\Serilog.Sinks.NamedPipe.csproj", "{D7AB5290-FB06-4EE8-A87A-557F3D6B256F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.NamedPipe.Reader", "src\Serilog.Sinks.NamedPipe.Reader\Serilog.Sinks.NamedPipe.Reader.csproj", "{4D095946-4E28-4B43-8314-D460E5F18937}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.NamedPipe.Reader", "src\Serilog.Sinks.NamedPipe.Reader\Serilog.Sinks.NamedPipe.Reader.csproj", "{4D095946-4E28-4B43-8314-D460E5F18937}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{89EDE25E-A5F3-4D33-8D3E-9B112AAB4ED7}"
 EndProject
@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.NamedPipe.Factories", "src\Serilog.Sinks.NamedPipe.Factories\Serilog.Sinks.NamedPipe.Factories.csproj", "{597410C5-E5F2-4D5D-88FC-90F0A0D6D053}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,22 +33,27 @@ Global
 		{D7AB5290-FB06-4EE8-A87A-557F3D6B256F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7AB5290-FB06-4EE8-A87A-557F3D6B256F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7AB5290-FB06-4EE8-A87A-557F3D6B256F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4D095946-4E28-4B43-8314-D460E5F18937}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4D095946-4E28-4B43-8314-D460E5F18937}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D095946-4E28-4B43-8314-D460E5F18937}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D095946-4E28-4B43-8314-D460E5F18937}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{597410C5-E5F2-4D5D-88FC-90F0A0D6D053}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{597410C5-E5F2-4D5D-88FC-90F0A0D6D053}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{597410C5-E5F2-4D5D-88FC-90F0A0D6D053}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{597410C5-E5F2-4D5D-88FC-90F0A0D6D053}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D7AB5290-FB06-4EE8-A87A-557F3D6B256F} = {3C59D2B9-0D89-4EA1-9162-D6D28E864263}
-		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF} = {89EDE25E-A5F3-4D33-8D3E-9B112AAB4ED7}
 		{4D095946-4E28-4B43-8314-D460E5F18937} = {3C59D2B9-0D89-4EA1-9162-D6D28E864263}
+		{D45D7877-5A0F-476D-AEB2-C7DCCEFC20EF} = {89EDE25E-A5F3-4D33-8D3E-9B112AAB4ED7}
+		{597410C5-E5F2-4D5D-88FC-90F0A0D6D053} = {3C59D2B9-0D89-4EA1-9162-D6D28E864263}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E0008304-0AF2-4F0F-A190-43FCC127A074}

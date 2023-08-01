@@ -16,13 +16,16 @@
     <PackageTags>serilog;sink;logging;named-pipe;namedpipe;named;pipe</PackageTags>
     <PackageProjectUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</PackageProjectUrl>
     <PackageIcon>images\icon.png</PackageIcon>
-    <PackageIconUrl>https://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Serilog.Sinks.NamedPipe.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Serilog.Sinks.NamedPipe.Factories\Serilog.Sinks.NamedPipe.Factories.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,7 +37,6 @@
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
     <PackageReference Include="System.Buffers" Version="4.5.1" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
   <ItemGroup>

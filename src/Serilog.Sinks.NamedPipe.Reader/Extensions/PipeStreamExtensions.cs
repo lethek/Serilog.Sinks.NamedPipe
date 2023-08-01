@@ -80,7 +80,7 @@ public static class PipeStreamExtensions
 
     public static async ValueTask<string?> ReadMessageStringAsync(this PipeStream pipe, Encoding? encoding = null, CancellationToken cancellationToken = default)
     {
-        var msg = await ReadMessageAsync(pipe, cancellationToken);
+        var msg = await pipe.ReadMessageAsync(cancellationToken);
         return msg.HasValue
             ? GetStringFromBuffer(msg.Value, encoding ?? DefaultEncoding)
             : null;
@@ -89,7 +89,7 @@ public static class PipeStreamExtensions
 
     public static string? ReadMessageString(this PipeStream pipe, Encoding? encoding = null)
     {
-        var msg = ReadMessage(pipe);
+        var msg = pipe.ReadMessage();
         return msg.HasValue
             ? GetStringFromBuffer(msg.Value, encoding ?? DefaultEncoding)
             : null;

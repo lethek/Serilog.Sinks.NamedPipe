@@ -33,7 +33,7 @@ public class NamedPipeSinkTests
 
         //Setup the sink and then dispose of it
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultServerFactory(pipeName);
         await using (var sink = new NamedPipeSink(pipeFactory, null, null, 100)) {
             sink.OnMessagePumpStopped += _ => { stoppedSemaphore.Release(); };
 
@@ -64,7 +64,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultServerFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
@@ -84,7 +84,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultClientFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
@@ -106,7 +106,7 @@ public class NamedPipeSinkTests
 
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultClientFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
@@ -150,7 +150,7 @@ public class NamedPipeSinkTests
 
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultServerFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
@@ -192,7 +192,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultServerPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultServerFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
@@ -225,7 +225,7 @@ public class NamedPipeSinkTests
     {
         //Setup the sink
         var pipeName = GeneratePipeName();
-        var pipeFactory = NamedPipeSink.DefaultClientPipeStreamFactory(pipeName);
+        var pipeFactory = NamedPipeFactories.DefaultClientFactory(pipeName);
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 10);
 
         //Emit 20 log events while the pipe is disconnected
@@ -263,7 +263,7 @@ public class NamedPipeSinkTests
         var pipeName = GeneratePipeName();
 
         //Custom factory which creates a named-pipe server stream and waits for a client to connect
-        var pipeFactory = NamedPipeSink.CreatePipeStreamFactory(
+        var pipeFactory = NamedPipeFactories.CreateFactory(
             //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
             () => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous),
             (server, cancellationToken) => server.WaitForConnectionAsync(cancellationToken)
@@ -298,7 +298,7 @@ public class NamedPipeSinkTests
         var pipeName = GeneratePipeName();
 
         //Custom factory which creates a named-pipe server stream and waits for a client to connect
-        var pipeFactory = NamedPipeSink.CreatePipeStreamFactory(
+        var pipeFactory = NamedPipeFactories.CreateFactory(
             //A named-pipe needs to be bi-directional (PipeDirection.InOut) to use Message transmision-mode 
             () => new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous),
             (client, cancellationToken) => client.ConnectAsync(cancellationToken)
