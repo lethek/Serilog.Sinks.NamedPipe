@@ -45,7 +45,7 @@ public class NamedPipeSinkTests
             //this unit-test and avoid an old .NET bug (https://github.com/dotnet/runtime/issues/40289) which can cause
             //the server to hang forever on Unix systems. Microsoft fixed it in .NET 6.0, however we still need to support
             //and test older versions of .NET.
-            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
+            await using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await client.ConnectAsync();
             #endif
         }
@@ -88,7 +88,7 @@ public class NamedPipeSinkTests
         await using var sink = new NamedPipeSink(pipeFactory, null, null, 100);
 
         //Setup the receiver
-        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         await receiver.WaitForConnectionAsync();
         using var reader = new StreamReader(receiver);
         Assert.True(receiver.IsConnected);
@@ -111,7 +111,7 @@ public class NamedPipeSinkTests
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
-        await using (var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
+        await using (var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
             await receiver.WaitForConnectionAsync();
             using var reader = new StreamReader(receiver);
 
@@ -129,7 +129,7 @@ public class NamedPipeSinkTests
 
 
         //Create a second connection to read from the pipe
-        await using (var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
+        await using (var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
             await receiver.WaitForConnectionAsync();
             using var reader = new StreamReader(receiver);
 
@@ -155,7 +155,7 @@ public class NamedPipeSinkTests
         sink.OnPipeBroken += (sender, args) => { pipeBrokenSemaphore.Release(); };
 
         //Create an initial connection to read from the pipe, then break the pipe by allowing the connection to be disposed
-        await using (var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+        await using (var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)) {
             await receiver.ConnectAsync();
             using var reader = new StreamReader(receiver);
 
@@ -173,7 +173,7 @@ public class NamedPipeSinkTests
 
 
         //Create a second connection to read from the pipe
-        await using (var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+        await using (var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)) {
             await receiver.ConnectAsync();
             using var reader = new StreamReader(receiver);
 
@@ -208,7 +208,7 @@ public class NamedPipeSinkTests
         sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
-        await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
+        await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         await receiver.ConnectAsync();
         using var reader = new StreamReader(receiver);
         for (var i = 0; i < 10; i++) {
@@ -241,7 +241,7 @@ public class NamedPipeSinkTests
         sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
-        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         await receiver.WaitForConnectionAsync();
         using var reader = new StreamReader(receiver);
         for (var i = 0; i < 10; i++) {
