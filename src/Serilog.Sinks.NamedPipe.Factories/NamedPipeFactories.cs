@@ -88,6 +88,40 @@ public static class NamedPipeFactories
 
 
     /// <summary>
+    /// The default <see cref="PipeStreamFactory"/> for creating a <see cref="NamedPipeClientStream"/> instance in Message mode. The pipe will be asynchronous and
+    /// assumed to be located on the local machine and data transmitted as a stream of messages. This is only available on Windows.
+    /// </summary>
+    /// <param name="pipeName">The name of the named-pipe.</param>
+    /// <returns>A factory method which, when called, creates and connects the named-pipe.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pipeName"/> is <see langword="null" />.</exception>
+    public static PipeStreamFactory DefaultMessageClientFactory(string pipeName)
+        => String.IsNullOrWhiteSpace(pipeName)
+            ? throw new ArgumentNullException(nameof(pipeName))
+            : CreateFactory(
+                () => new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous),
+                async (pipe, cancellationToken) => {
+                    await pipe.ConnectAsync(cancellationToken);
+                    pipe.ReadMode = PipeTransmissionMode.Message;
+                });
+
+
+    /// <summary>
+    /// The default <see cref="PipeStreamFactory"/> for creating a <see cref="NamedPipeServerStream"/> instance in Message mode. The pipe will be asynchronous and
+    /// data transmitted as stream of messages. This is only available on Windows.
+    /// </summary>
+    /// <param name="pipeName">The name of the named-pipe.</param>
+    /// <returns>A factory method which, when called, creates and connects the named-pipe.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pipeName"/> is <see langword="null" />.</exception>
+    public static PipeStreamFactory DefaultMessageServerFactory(string pipeName)
+        => String.IsNullOrWhiteSpace(pipeName)
+            ? throw new ArgumentNullException(nameof(pipeName))
+            : CreateFactory(
+                () => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous),
+                (pipe, cancellationToken) => pipe.WaitForConnectionAsync(cancellationToken)
+            );
+
+
+    /// <summary>
     /// Try the specified asyncAction, if it fails, dispose the <paramref name="disposable"/> and rethrow the exception.
     /// </summary>
     /// <typeparam name="TIn">The input object Type, it must be the same type as <typeparamref name="TOut"/> or a sub-class. It must also implement <see cref="IDisposable"/>.</typeparam>
