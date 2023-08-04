@@ -58,10 +58,10 @@ public static class NamedPipeFactories
     /// The default <see cref="PipeStreamFactory"/> for creating a <see cref="NamedPipeClientStream"/> instance. The pipe will be asynchronous and assumed to be located on the local machine.
     /// </summary>
     /// <param name="pipeName">The name of the named-pipe.</param>
-    /// <param name="direction">The direction of the named-pipe communication from this side. The default is <see cref="E:PipeDirection.Out"/>.</param>
+    /// <param name="direction">The direction of the named-pipe communication from this side. The default is <see cref="E:PipeDirection.InOut"/>.</param>
     /// <returns>A factory method which, when called, creates and connects the named-pipe.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="pipeName"/> is <see langword="null" />.</exception>
-    public static PipeStreamFactory DefaultClientFactory(string pipeName, PipeDirection direction = PipeDirection.Out)
+    public static PipeStreamFactory DefaultClientFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
         => String.IsNullOrWhiteSpace(pipeName)
             ? throw new ArgumentNullException(nameof(pipeName))
             : CreateFactory(
@@ -74,15 +74,14 @@ public static class NamedPipeFactories
     /// The default <see cref="PipeStreamFactory"/> for creating a <see cref="NamedPipeServerStream"/> instance. The pipe will be asynchronous and data transmitted as stream of bytes rather than messages.
     /// </summary>
     /// <param name="pipeName">The name of the named-pipe.</param>
-    /// <param name="direction">The direction of the named-pipe communication from this side. The default is <see cref="E:PipeDirection.Out"/>.</param>
-    /// <param name="transmissionMode">The transmission mode of the named-pipe. The default is <see cref="E:PipeTransmissionMode.Byte"/>.</param>
+    /// <param name="direction">The direction of the named-pipe communication from this side. The default is <see cref="E:PipeDirection.InOut"/>.</param>
     /// <returns>A factory method which, when called, creates and connects the named-pipe.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="pipeName"/> is <see langword="null" />.</exception>
-    public static PipeStreamFactory DefaultServerFactory(string pipeName, PipeDirection direction = PipeDirection.Out, PipeTransmissionMode transmissionMode = PipeTransmissionMode.Byte)
+    public static PipeStreamFactory DefaultServerFactory(string pipeName, PipeDirection direction = PipeDirection.InOut)
         => String.IsNullOrWhiteSpace(pipeName)
             ? throw new ArgumentNullException(nameof(pipeName))
             : CreateFactory(
-                () => new NamedPipeServerStream(pipeName, direction, 1, transmissionMode, PipeOptions.Asynchronous),
+                () => new NamedPipeServerStream(pipeName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous),
                 (pipe, cancellationToken) => pipe.WaitForConnectionAsync(cancellationToken)
             );
 

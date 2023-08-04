@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\README-Factories.md" Pack="true" Visible="false" PackagePath="README.md" />
     <None Include="..\..\assets\serilog-red-logo.png" Pack="true" Visible="false" PackagePath="images\icon.png" />
   </ItemGroup>
 

@@ -23,7 +23,8 @@ public static class NamedPipeLoggerConfigurationExtensions
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="pipeName">Name of the pipe (assumed to be on the local computer). A pipe client with this name is created.</param>
-    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.Out"/></param>
+    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.InOut"/></param>
+    /// <param name="pipeTransmissionMode">The transmission mode of the pipe. The default is <see cref="E:PipeTransmissionMode.Byte"/>.</param>
     /// <param name="encoding">Character encoding used to write to the named pipe. The default is UTF-8 without BOM.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for the
     /// named pipe. The default is <see cref="CompactJsonFormatter"/>.</param>
@@ -37,7 +38,8 @@ public static class NamedPipeLoggerConfigurationExtensions
     public static LoggerConfiguration NamedPipeClient(
         this LoggerSinkConfiguration sinkConfiguration,
         string pipeName,
-        PipeDirection pipeDirection = PipeDirection.Out,
+        PipeDirection pipeDirection = PipeDirection.InOut,
+        PipeTransmissionMode pipeTransmissionMode = PipeTransmissionMode.Byte,        
         Encoding? encoding = null,
         ITextFormatter? formatter = null,
         LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose,
@@ -45,7 +47,11 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        var pipeFactory = NamedPipeFactories.DefaultClientFactory(pipeName, pipeDirection);
+        var pipeFactory = pipeTransmissionMode switch {
+            PipeTransmissionMode.Byte => NamedPipeFactories.DefaultClientFactory(pipeName, pipeDirection),
+            PipeTransmissionMode.Message => NamedPipeFactories.DefaultMessageClientFactory(pipeName),
+            _ => throw new NotSupportedException($"Unsupported {nameof(PipeTransmissionMode)}: {pipeTransmissionMode}")
+        };
         return NamedPipe(sinkConfiguration, pipeFactory, encoding, formatter, restrictedToMinimumLevel, levelSwitch, bufferSize);
     }
 
@@ -55,7 +61,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="pipeName">Name of the pipe. A pipe server with this name is created.</param>
-    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.Out"/></param>
+    /// <param name="pipeDirection">The direction of the pipe from the sink's perspective. The default is <see cref="E:PipeDirection.InOut"/></param>
     /// <param name="pipeTransmissionMode">The transmission mode of the pipe. The default is <see cref="E:PipeTransmissionMode.Byte"/>.</param>
     /// <param name="encoding">Character encoding used to write to the named pipe. The default is UTF-8 without BOM.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for the
@@ -70,7 +76,7 @@ public static class NamedPipeLoggerConfigurationExtensions
     public static LoggerConfiguration NamedPipeServer(
         this LoggerSinkConfiguration sinkConfiguration,
         string pipeName,
-        PipeDirection pipeDirection = PipeDirection.Out,
+        PipeDirection pipeDirection = PipeDirection.InOut,
         PipeTransmissionMode pipeTransmissionMode = PipeTransmissionMode.Byte,
         Encoding? encoding = null,
         ITextFormatter? formatter = null,
@@ -79,7 +85,11 @@ public static class NamedPipeLoggerConfigurationExtensions
         int bufferSize = DefaultBufferCapacity
     )
     {
-        var pipeFactory = NamedPipeFactories.DefaultServerFactory(pipeName, pipeDirection, pipeTransmissionMode);
+        var pipeFactory = pipeTransmissionMode switch {
+            PipeTransmissionMode.Byte => NamedPipeFactories.DefaultServerFactory(pipeName, pipeDirection),
+            PipeTransmissionMode.Message => NamedPipeFactories.DefaultMessageServerFactory(pipeName),
+            _ => throw new NotSupportedException($"Unsupported {nameof(PipeTransmissionMode)}: {pipeTransmissionMode}")
+        };
         return NamedPipe(sinkConfiguration, pipeFactory, encoding, formatter, restrictedToMinimumLevel, levelSwitch, bufferSize);
     }
 

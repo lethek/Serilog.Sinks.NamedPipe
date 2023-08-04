@@ -5,6 +5,7 @@ namespace Serilog.Sinks.NamedPipe;
 
 internal sealed class CoalescingStreamWriter : TextWriter
 {
+    
     public CoalescingStreamWriter(Stream stream, Encoding encoding, bool leaveOpen = false)
     {
         _buffer = new StringBuilder();
