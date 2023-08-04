@@ -15,6 +15,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>serilog;sink;logging;named-pipe;namedpipe;named;pipe</PackageTags>
     <PackageProjectUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>images\icon.png</PackageIcon>
     <RepositoryUrl>https://github.com/lethek/Serilog.Sinks.NamedPipe</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
