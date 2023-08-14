@@ -18,7 +18,7 @@ public static class PipeStreamExtensions
     /// </summary>
     /// <param name="pipe">The <see cref="PipeStream"/> instance to read from.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>A <see cref="ValueTask"/> representing the asynchronous read operation that wraps a read-only memory block of the read message's bytes, or null if there is no message to read.</returns>
+    /// <returns>A <see cref="ValueTask"/> representing the asynchronous read operation that wraps a read-only memory block of the read message's bytes, or <see langword="null"/> if there is no message to read.</returns>
     public static async ValueTask<ReadOnlyMemory<byte>?> ReadMessageAsync(this PipeStream pipe, CancellationToken cancellationToken = default)
     {
         if (pipe.ReadMode != PipeTransmissionMode.Message) {

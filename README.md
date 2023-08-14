@@ -1,8 +1,8 @@
 # Serilog.Sinks.NamedPipe
 
-[![Build & Publish](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml/badge.svg)](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml)
-[![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.NamedPipe.Factories.svg)](https://www.nuget.org/packages/Serilog.Sinks.NamedPipe.Factories)
-[![GitHub license](https://img.shields.io/github/license/lethek/Serilog.Sinks.NamedPipe)](https://github.com/lethek/Serilog.Sinks.NamedPipe/blob/master/LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.NamedPipe.svg)](https://www.nuget.org/packages/Serilog.Sinks.NamedPipe)
+[![Build](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml/badge.svg)](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml)
+[![License](https://img.shields.io/github/license/lethek/Serilog.Sinks.NamedPipe)](https://github.com/lethek/Serilog.Sinks.NamedPipe/blob/master/LICENSE)
 
 This repository hosts the projects for three separate NuGet packages:
 

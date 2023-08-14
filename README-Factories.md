@@ -1,8 +1,8 @@
 # Serilog.Sinks.NamedPipe.Factories
 
-[![Build & Publish](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml/badge.svg)](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.NamedPipe.Factories.svg)](https://www.nuget.org/packages/Serilog.Sinks.NamedPipe.Factories)
-[![GitHub license](https://img.shields.io/github/license/lethek/Serilog.Sinks.NamedPipe)](https://github.com/lethek/Serilog.Sinks.NamedPipe/blob/master/LICENSE)
+[![Build](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml/badge.svg)](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml)
+[![License](https://img.shields.io/github/license/lethek/Serilog.Sinks.NamedPipe)](https://github.com/lethek/Serilog.Sinks.NamedPipe/blob/master/LICENSE)
 
 Provides functionality for creating a factory that provides a pipe to read/write log events.
 

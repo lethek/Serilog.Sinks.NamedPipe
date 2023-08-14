@@ -1,8 +1,8 @@
 # Serilog.Sinks.NamedPipe.Reader
 
-[![Build & Publish](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml/badge.svg)](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.NamedPipe.Reader.svg)](https://www.nuget.org/packages/Serilog.Sinks.NamedPipe.Reader)
-[![GitHub license](https://img.shields.io/github/license/lethek/Serilog.Sinks.NamedPipe)](https://github.com/lethek/Serilog.Sinks.NamedPipe/blob/master/LICENSE)
+[![Build](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml/badge.svg)](https://github.com/lethek/Serilog.Sinks.NamedPipe/actions/workflows/dotnet.yml)
+[![License](https://img.shields.io/github/license/lethek/Serilog.Sinks.NamedPipe)](https://github.com/lethek/Serilog.Sinks.NamedPipe/blob/master/LICENSE)
 
 Provides functionality for reading Serilog log events asynchronously from a named pipe.
 

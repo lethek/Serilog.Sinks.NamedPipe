@@ -22,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README-Reader.md = README-Reader.md
 		README-Sink.md = README-Sink.md
 		README.md = README.md
+		CHANGELOG.md = CHANGELOG.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.NamedPipe.Factories", "src\Serilog.Sinks.NamedPipe.Factories\Serilog.Sinks.NamedPipe.Factories.csproj", "{597410C5-E5F2-4D5D-88FC-90F0A0D6D053}"
