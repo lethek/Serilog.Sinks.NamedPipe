@@ -2,8 +2,11 @@ name: Build & Publish
 
 on:
   push:
-    branches: [ main, master ]
-    tags: [ v* ]
+    branches:
+      - main
+      - master
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 env:
   buildConfiguration: Release
@@ -12,62 +15,54 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Setup GitVersion
-      uses: gittools/actions/gitversion/setup@v0.10.2
-      with:
-        versionSpec: 5.x
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: 5.x
 
-    - name: Execute GitVersion
-      uses: gittools/actions/gitversion/execute@v0.10.2
-      id: gitversion
-      with:
-        additionalArguments: /output BuildServer
-        useConfigFile: true
+      - name: Execute GitVersion
+        uses: gittools/actions/gitversion/execute@v0.10.2
+        id: gitversion
+        with:
+          additionalArguments: /output BuildServer
+          useConfigFile: true
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-quality: 'preview'
-        dotnet-version: |
-          3.1
-          6.x
-          8.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-quality: 'preview'
+          dotnet-version: |
+            3.1
+            6.x
+            8.x
 
-    - name: Restore
-      run: dotnet restore
+      - name: Restore
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build -c ${{ env.buildConfiguration }} --no-restore -p:Version=${{ steps.gitversion.outputs.nuGetVersion }} -p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }} -p:AssemblyVersion=1.0.0.0
+      - name: Build
+        run: dotnet build -c ${{ env.buildConfiguration }} --no-restore -p:Version=${{ steps.gitversion.outputs.nuGetVersion }} -p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }} -p:AssemblyVersion=1.0.0.0
 
-    - name: Test
-      run: dotnet test -c ${{ env.buildConfiguration }} --no-build -v normal --filter FullyQualifiedName!~IntegrationTests
+      - name: Test
+        run: dotnet test -c ${{ env.buildConfiguration }} --no-build -v normal --filter FullyQualifiedName!~IntegrationTests
 
-    - name: Pack
-      run: dotnet pack -c ${{ env.buildConfiguration }} -p:PackageOutputPath="${{ github.workspace }}/artifacts/" -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
+      - name: Pack
+        run: dotnet pack -c ${{ env.buildConfiguration }} -p:PackageOutputPath="${{ github.workspace }}/artifacts/" -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
 
-    - name: Upload
-      uses: actions/upload-artifact@v3
-      with:
-        name: nuget
-        path: |
-          ${{ github.workspace }}/artifacts/*.nupkg
-          ${{ github.workspace }}/artifacts/*.snupkg
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget
+          path: |
+            ${{ github.workspace }}/artifacts/*.nupkg
+            ${{ github.workspace }}/artifacts/*.snupkg
 
-    #- name: Push (Pre-release)
-    #  if: ${{ steps.gitversion.outputs.nuGetPreReleaseTag != '' }}
-    #  uses: lethek/os-specific-run@v1.0.6
-    #  with:
-    #    linux: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" -s ${{ secrets.MYGET_SOURCE }} -k ${{ secrets.MYGET_API_KEY }} --skip-duplicate
-    #    windows: dotnet nuget push "${{ github.workspace }}\artifacts\*.nupkg" -s ${{ secrets.MYGET_SOURCE }} -k ${{ secrets.MYGET_API_KEY }} --skip-duplicate
-
-    - name: Push (Release)
-      # if: ${{ steps.gitversion.outputs.nuGetPreReleaseTag == '' }}
-      uses: lethek/os-specific-run@v1.0.6
-      with:
-        linux: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
-        windows: dotnet nuget push "${{ github.workspace }}\artifacts\*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+      - name: Push
+        uses: lethek/os-specific-run@v1.0.6
+        with:
+          linux: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+          windows: dotnet nuget push "${{ github.workspace }}\artifacts\*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
