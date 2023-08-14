@@ -2,6 +2,14 @@
 
 ---
 
+## 2.0.1
+
+### Bug Fixes
+
+* Fixed a Serilog.Sinks.NamedPipe.Reader bug where reading logs in Message transmission mode returned an empty string when the pipe's connection breaks.
+
+---
+
 ## 2.0.0
 
 ### Breaking Changes
