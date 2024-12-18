@@ -204,8 +204,10 @@ public class NamedPipeSinkTests
         Assert.Equal(10, sink.LogChannel.Reader.Count);
 
         //Subscribe for notifications of successful log writes and inform the hypothesis of remaining queue size
-        var hypothesis = Hypothesis.For<int>();
-        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
+        var observer = new Observer<int>();
+        var hypothesis = Hypothesis.On(observer).Timebox(DefaultTimeout);
+        
+        sink.OnWriteSuccess += (source, _) => observer.Add(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
         await using var receiver = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
@@ -216,7 +218,7 @@ public class NamedPipeSinkTests
         }
 
         //Validate the hypothesis that there are no more log events queued up
-        await hypothesis.Any(queueSize => queueSize == 0).Validate(DefaultTimeout);
+        await hypothesis.Any().Match(queueSize => queueSize == 0).Validate();
     }
 
 
@@ -237,8 +239,9 @@ public class NamedPipeSinkTests
         Assert.Equal(10, sink.LogChannel.Reader.Count);
 
         //Subscribe for notifications of successful log writes and inform the hypothesis of remaining queue size
-        var hypothesis = Hypothesis.For<int>();
-        sink.OnWriteSuccess += (source, _) => hypothesis.Test(source.LogChannel.Reader.Count);
+        var observer = new Observer<int>();
+        var hypothesis = Hypothesis.On(observer).Timebox(DefaultTimeout);
+        sink.OnWriteSuccess += (source, _) => observer.Add(source.LogChannel.Reader.Count);
 
         //Allow all of those 10 queued log events to be delivered
         await using var receiver = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
@@ -249,7 +252,7 @@ public class NamedPipeSinkTests
         }
 
         //Validate the hypothesis that there are no more log events queued up
-        await hypothesis.Any(queueSize => queueSize == 0).Validate(DefaultTimeout);
+        await hypothesis.Any().Match(queueSize => queueSize == 0).Validate();
     }
 
 

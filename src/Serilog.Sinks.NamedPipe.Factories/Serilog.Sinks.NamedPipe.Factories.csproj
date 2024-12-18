@@ -22,13 +22,13 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-  </ItemGroup>
-
   <ItemGroup>
     <None Include="..\..\README-Factories.md" Pack="true" Visible="false" PackagePath="README.md" />
     <None Include="..\..\assets\serilog-red-logo.png" Pack="true" Visible="false" PackagePath="images\icon.png" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
-﻿using System.IO.Pipes;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.IO.Pipes;
 using System.Text;
 
 using Serilog.Configuration;
@@ -16,6 +17,7 @@ namespace Serilog;
 /// <summary>
 /// Provides extensions methods for <see cref="LoggerSinkConfiguration"/> to add and configure a named pipe sink.
 /// </summary>
+[SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
 public static class NamedPipeLoggerConfigurationExtensions
 {
     /// <summary>

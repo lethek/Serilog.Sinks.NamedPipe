@@ -3,19 +3,9 @@
 
 namespace Serilog.Sinks.NamedPipe;
 
-internal sealed class CoalescingStreamWriter : TextWriter
+internal sealed class CoalescingStreamWriter(Stream stream, Encoding encoding, bool leaveOpen = false) : TextWriter
 {
-    
-    public CoalescingStreamWriter(Stream stream, Encoding encoding, bool leaveOpen = false)
-    {
-        _buffer = new StringBuilder();
-        _innerStream = stream;
-        _leaveOpen = leaveOpen;
-        Encoding = encoding;
-    }
-
-
-    public override Encoding Encoding { get; }
+    public override Encoding Encoding { get; } = encoding;
 
 
     public override void Write(char value)
@@ -41,11 +31,11 @@ internal sealed class CoalescingStreamWriter : TextWriter
         if (_buffer.Length > 0) {
             var bytes = Encoding.GetBytes(_buffer.ToString());
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
-            _innerStream.Write(bytes.AsSpan());
+            stream.Write(bytes.AsSpan());
 #else
-            _innerStream.Write(bytes, 0, bytes.Length);
+            stream.Write(bytes, 0, bytes.Length);
 #endif
-            _innerStream.Flush();
+            stream.Flush();
             _buffer.Clear();
         }
     }
@@ -85,11 +75,11 @@ internal sealed class CoalescingStreamWriter : TextWriter
 
         var bytes = Encoding.GetBytes(_buffer.ToString());
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
-        await _innerStream.WriteAsync(bytes.AsMemory(), cancellationToken).ConfigureAwait(false);
+        await stream.WriteAsync(bytes.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
-        await _innerStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+        await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 #endif
-        await _innerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         _buffer.Clear();
     }
 
@@ -98,15 +88,13 @@ internal sealed class CoalescingStreamWriter : TextWriter
     {
         if (disposing) {
             Flush();
-            if (!_leaveOpen) {
-                _innerStream.Dispose();
+            if (!leaveOpen) {
+                stream.Dispose();
             }
         }
         base.Dispose(disposing);
     }
 
 
-    private readonly StringBuilder _buffer;
-    private readonly Stream _innerStream;
-    private readonly bool _leaveOpen;
+    private readonly StringBuilder _buffer = new();
 }
